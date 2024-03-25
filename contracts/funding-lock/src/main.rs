@@ -3,6 +3,8 @@
 
 #[cfg(test)]
 extern crate alloc;
+mod error;
+mod type_id;
 mod util;
 
 #[cfg(not(test))]
@@ -15,38 +17,21 @@ default_alloc!();
 use alloc::ffi::CString;
 use alloc::format;
 use ckb_std::{
-    ckb_constants::Source, ckb_types::core::ScriptHashType, debug, error::SysError, high_level::{self, exec_cell, load_witness}
+    ckb_constants::Source,
+    ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::Unpack},
+    debug,
+    high_level::{self, exec_cell, load_script, load_witness},
 };
 use hex::encode;
 
 use ckb_hash::blake2b_256;
+use error::Error;
 use nostr::Event;
 use nostr::JsonUtil;
-use util::{self as nostr_utils, get_asset_event_cell_outpoint};
+use type_id::{load_type_id_from_script_args, validate_type_id};
+use util::get_asset_event_cell_outpoint;
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
-
-#[repr(i8)]
-pub enum Error {
-    IndexOutOfBound = 1,
-    ItemMissing,
-    LengthNotEnough,
-    Encoding,
-    // Add customized errors here...
-    AuthError,
-}
-
-impl From<SysError> for Error {
-    fn from(err: SysError) -> Self {
-        match err {
-            SysError::IndexOutOfBound => Self::IndexOutOfBound,
-            SysError::ItemMissing => Self::ItemMissing,
-            SysError::LengthNotEnough(_) => Self::LengthNotEnough,
-            SysError::Encoding => Self::Encoding,
-            SysError::Unknown(err_code) => panic!("unexpected sys error {}", err_code),
-        }
-    }
-}
 
 pub fn program_entry() -> i8 {
     match auth() {
@@ -68,8 +53,9 @@ fn auth() -> Result<(), Error> {
 
     let mut pubkey_hash = [0u8; 20];
     let args = blake2b_256(public_key);
-    pubkey_hash.copy_from_slice(&args[0..20]); //todo: change to pubkey
+    pubkey_hash.copy_from_slice(&args[0..20]);
 
+    let _ = validate_args(event.id().to_bytes());
     validate_asset_event(event.clone());
 
     // AuthAlgorithmIdSchnorr = 7
@@ -90,9 +76,27 @@ fn auth() -> Result<(), Error> {
 }
 
 pub fn validate_asset_event(event: Event) {
-	let cell_outpoint = get_asset_event_cell_outpoint(event);
+    let cell_outpoint = get_asset_event_cell_outpoint(event);
     let outpoint = high_level::load_input_out_point(0, Source::GroupInput).unwrap();
     let tx_hash = outpoint.tx_hash();
     let index = outpoint.index();
-    debug!("cell_outpoint: {:?}, tx hash: {:?}, index: {:?}", cell_outpoint, tx_hash, index);
+    debug!(
+        "cell_outpoint: {:?}, tx hash: {:?}, index: {:?}",
+        cell_outpoint, tx_hash, index
+    );
+}
+
+pub fn validate_args(event_id: [u8; 32]) -> Result<(), Error> {
+    let mut script_event_id = [0u8; 32];
+    let script = load_script()?;
+    let args: Bytes = script.args().unpack();
+    script_event_id.copy_from_slice(&args[0..32]);
+
+    if !event_id.eq(&script_event_id) {
+        return Err(Error::AssetEventIdNotMatch);
+    }
+
+    let type_id = load_type_id_from_script_args(32)?;
+    validate_type_id(type_id)?;
+    Ok(())
 }

@@ -1,6 +1,5 @@
 use super::*;
 use ckb_testtool::{
-    ckb_hash::blake2b_256,
     ckb_types::{bytes::Bytes, core::TransactionBuilder, packed::*, prelude::*},
     context::Context,
 };
@@ -21,12 +20,19 @@ fn test_funding_lock() {
     // generate two random secret keys
     let my_keys =
         Keys::parse("a9e5f16529cbe055c1f7b6d928b980a2ee0cc0a1f07a8444b85b72b3f1d5c6ba").unwrap();
-    let x_only_pub_key = my_keys.public_key().to_bytes();
+
+    // New text note
+    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", [Tag::Generic(TagKind::from("cell_outpoint"), vec!["cell outpoint".to_string()])])
+        .to_event(&my_keys)
+        .unwrap();
 
     // prepare scripts
-    let pub_key_hash = blake2b_256(x_only_pub_key);
+    let event_id = event.id().to_bytes();
+    let mut lock_script_args: [u8; 64] = [0u8; 64];
+    lock_script_args[..32].copy_from_slice(&event_id);
+    lock_script_args[..32].copy_from_slice(&event_id);
     let lock_script = context
-        .build_script(&funding_lock_out_point, pub_key_hash[0..20].to_vec().into())
+        .build_script(&funding_lock_out_point, lock_script_args.to_vec().into())
         .expect("script");
 
     // prepare cell deps
@@ -69,12 +75,6 @@ fn test_funding_lock() {
         .build();
 
     // sign and add witness
-
-    // New text note
-    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", [Tag::Generic(TagKind::from("cell_outpoint"), vec!["cell outpoint".to_string()])])
-        .to_event(&my_keys)
-        .unwrap();
-
     let witness = event.as_json().as_bytes().to_vec();
 
     let tx = tx.as_advanced_builder().witness(witness.pack()).build();

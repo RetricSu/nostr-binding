@@ -84,7 +84,7 @@ clean:
 	cargo clean
 
 TEMPLATE_TYPE := --git
-TEMPLATE_REPO := ../ckb-script-templates
+TEMPLATE_REPO := https://github.com/cryptape/ckb-script-templates
 CRATE :=
 TEMPLATE := contract
 DESTINATION := contracts

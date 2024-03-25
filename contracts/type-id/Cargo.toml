@@ -1,0 +1,9 @@
+[package]
+name = "type-id"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ckb-hash = {version = "0.114.0", default-features = false, features = ["ckb-contract"]} 
+ckb-std = "0.15.1"
+molecule = { version = "0.8.0", default-features = false }
