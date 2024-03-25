@@ -3,6 +3,7 @@
 
 #[cfg(test)]
 extern crate alloc;
+mod util;
 
 #[cfg(not(test))]
 use ckb_std::default_alloc;
@@ -14,16 +15,14 @@ default_alloc!();
 use alloc::ffi::CString;
 use alloc::format;
 use ckb_std::{
-    ckb_constants::Source,
-    ckb_types::core::ScriptHashType,
-    error::SysError,
-    high_level::{exec_cell, load_witness},
+    ckb_constants::Source, ckb_types::core::ScriptHashType, debug, error::SysError, high_level::{self, exec_cell, load_witness}
 };
 use hex::encode;
 
 use ckb_hash::blake2b_256;
 use nostr::Event;
 use nostr::JsonUtil;
+use util::{self as nostr_utils, get_asset_event_cell_outpoint};
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
@@ -71,6 +70,8 @@ fn auth() -> Result<(), Error> {
     let args = blake2b_256(public_key);
     pubkey_hash.copy_from_slice(&args[0..20]); //todo: change to pubkey
 
+    validate_asset_event(event.clone());
+
     // AuthAlgorithmIdSchnorr = 7
     let algorithm_id_str = CString::new(format!("{:02X?}", 7u8)).unwrap();
     let signature_str = CString::new(format!("{}", encode(signature_auth))).unwrap();
@@ -86,4 +87,12 @@ fn auth() -> Result<(), Error> {
 
     exec_cell(&AUTH_CODE_HASH, ScriptHashType::Data1, &args).map_err(|_| Error::AuthError)?;
     Ok(())
+}
+
+pub fn validate_asset_event(event: Event) {
+	let cell_outpoint = get_asset_event_cell_outpoint(event);
+    let outpoint = high_level::load_input_out_point(0, Source::GroupInput).unwrap();
+    let tx_hash = outpoint.tx_hash();
+    let index = outpoint.index();
+    debug!("cell_outpoint: {:?}, tx hash: {:?}, index: {:?}", cell_outpoint, tx_hash, index);
 }

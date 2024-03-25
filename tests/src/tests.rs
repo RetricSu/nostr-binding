@@ -71,7 +71,7 @@ fn test_funding_lock() {
     // sign and add witness
 
     // New text note
-    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", [])
+    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", [Tag::Generic(TagKind::from("cell_outpoint"), vec!["cell outpoint".to_string()])])
         .to_event(&my_keys)
         .unwrap();
 
