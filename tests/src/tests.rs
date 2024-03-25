@@ -4,13 +4,6 @@ use ckb_testtool::{
     ckb_types::{bytes::Bytes, core::TransactionBuilder, packed::*, prelude::*},
     context::Context,
 };
-use musig2::{
-    BinaryEncoding, CompactSignature, FirstRound, KeyAggContext, PartialSignature, SecNonceSpices,
-};
-use secp256k1::{
-    rand::{self, RngCore},
-    PublicKey, Secp256k1, SecretKey,
-};
 use nostr::prelude::*;
 
 const MAX_CYCLES: u64 = 10_000_000;
@@ -26,7 +19,8 @@ fn test_funding_lock() {
     let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
     // generate two random secret keys
-    let my_keys = Keys::parse("a9e5f16529cbe055c1f7b6d928b980a2ee0cc0a1f07a8444b85b72b3f1d5c6ba").unwrap();
+    let my_keys =
+        Keys::parse("a9e5f16529cbe055c1f7b6d928b980a2ee0cc0a1f07a8444b85b72b3f1d5c6ba").unwrap();
     let x_only_pub_key = my_keys.public_key().to_bytes();
 
     // prepare scripts
@@ -75,9 +69,11 @@ fn test_funding_lock() {
         .build();
 
     // sign and add witness
-    
+
     // New text note
-    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", []).to_event(&my_keys).unwrap();
+    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", [])
+        .to_event(&my_keys)
+        .unwrap();
 
     let witness = event.as_json().as_bytes().to_vec();
 

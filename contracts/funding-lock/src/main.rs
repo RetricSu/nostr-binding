@@ -15,12 +15,13 @@ use alloc::ffi::CString;
 use alloc::format;
 use ckb_std::{
     ckb_constants::Source,
-    ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::*},
+    ckb_types::core::ScriptHashType,
     error::SysError,
-    high_level::{exec_cell, load_script, load_tx_hash, load_witness},
+    high_level::{exec_cell, load_witness},
 };
 use hex::encode;
 
+use ckb_hash::blake2b_256;
 use nostr::Event;
 use nostr::JsonUtil;
 
@@ -58,7 +59,7 @@ pub fn program_entry() -> i8 {
 fn auth() -> Result<(), Error> {
     let event_bytes = load_witness(0, Source::GroupInput)?;
     let event = Event::from_json(event_bytes).unwrap();
-    let binding = event.signature(); 
+    let binding = event.signature();
     let signature = binding.as_ref();
     let message = event.id.as_bytes();
     let public_key = event.pubkey.to_bytes();
@@ -67,8 +68,7 @@ fn auth() -> Result<(), Error> {
     signature_auth[32..].copy_from_slice(&signature.to_vec());
 
     let mut pubkey_hash = [0u8; 20];
-    let script = load_script()?;
-    let args: Bytes = script.args().unpack();
+    let args = blake2b_256(public_key);
     pubkey_hash.copy_from_slice(&args[0..20]); //todo: change to pubkey
 
     // AuthAlgorithmIdSchnorr = 7
