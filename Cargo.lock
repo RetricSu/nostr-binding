@@ -463,7 +463,7 @@ dependencies = [
  "ckb-fixed-hash 0.112.1",
  "ckb-hash 0.112.1",
  "ckb-occupied-capacity 0.112.1",
- "molecule 0.7.5",
+ "molecule",
  "numext-fixed-uint",
 ]
 
@@ -478,7 +478,7 @@ dependencies = [
  "ckb-fixed-hash 0.114.0",
  "ckb-hash 0.114.0",
  "ckb-occupied-capacity 0.114.0",
- "molecule 0.7.5",
+ "molecule",
  "numext-fixed-uint",
 ]
 
@@ -743,7 +743,7 @@ dependencies = [
  "derive_more",
  "golomb-coded-set",
  "merkle-cbt",
- "molecule 0.7.5",
+ "molecule",
  "numext-fixed-uint",
  "once_cell",
  "paste",
@@ -1424,16 +1424,6 @@ dependencies = [
  "bytes",
  "cfg-if",
  "faster-hex",
-]
-
-[[package]]
-name = "molecule"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6efe1c7efcd0bdf4ca590e104bcb13087d9968956ae4ae98e92fb8c1da0f3730"
-dependencies = [
- "bytes",
- "cfg-if",
 ]
 
 [[package]]
@@ -2307,15 +2297,6 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
-
-[[package]]
-name = "type-id"
-version = "0.1.0"
-dependencies = [
- "ckb-hash 0.114.0",
- "ckb-std",
- "molecule 0.8.0",
-]
 
 [[package]]
 name = "typenum"
