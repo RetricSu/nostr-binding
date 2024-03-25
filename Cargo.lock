@@ -982,17 +982,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "funding-lock"
-version = "0.1.0"
-dependencies = [
- "ckb-gen-types 0.114.0",
- "ckb-hash 0.114.0",
- "ckb-std",
- "hex",
- "nostr",
-]
-
-[[package]]
 name = "futures-channel"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1461,6 +1450,17 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "nostr-binding"
+version = "0.1.0"
+dependencies = [
+ "ckb-gen-types 0.114.0",
+ "ckb-hash 0.114.0",
+ "ckb-std",
+ "hex",
+ "nostr",
 ]
 
 [[package]]

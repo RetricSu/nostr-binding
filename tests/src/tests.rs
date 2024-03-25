@@ -12,9 +12,9 @@ fn test_funding_lock() {
     // deploy contract
     let mut context = Context::default();
     let loader = Loader::default();
-    let funding_lock_bin = loader.load_binary("funding-lock");
+    let nostr_binding_bin = loader.load_binary("nostr-binding");
     let auth_bin = loader.load_binary("../../deps/auth");
-    let funding_lock_out_point = context.deploy_cell(funding_lock_bin);
+    let funding_lock_out_point = context.deploy_cell(nostr_binding_bin);
     let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
     // generate two random secret keys
