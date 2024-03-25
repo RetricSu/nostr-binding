@@ -11,6 +11,7 @@ use secp256k1::{
     rand::{self, RngCore},
     PublicKey, Secp256k1, SecretKey,
 };
+use nostr::prelude::*;
 
 const MAX_CYCLES: u64 = 10_000_000;
 
@@ -22,19 +23,11 @@ fn test_funding_lock() {
     let funding_lock_bin = loader.load_binary("funding-lock");
     let auth_bin = loader.load_binary("../../deps/auth");
     let funding_lock_out_point = context.deploy_cell(funding_lock_bin);
-    let auth_out_point = context.deploy_cell(auth_bin);
+    let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
     // generate two random secret keys
-    let sec_key_1 = SecretKey::new(&mut rand::thread_rng());
-    let sec_key_2 = SecretKey::new(&mut rand::thread_rng());
-
-    // public key aggregation
-    let secp256k1 = Secp256k1::new();
-    let pub_key_1 = sec_key_1.public_key(&secp256k1);
-    let pub_key_2 = sec_key_2.public_key(&secp256k1);
-    let key_agg_ctx = KeyAggContext::new(vec![pub_key_1, pub_key_2]).unwrap();
-    let aggregated_pub_key: PublicKey = key_agg_ctx.aggregated_pubkey();
-    let x_only_pub_key = aggregated_pub_key.x_only_public_key().0.serialize();
+    let my_keys = Keys::parse("a9e5f16529cbe055c1f7b6d928b980a2ee0cc0a1f07a8444b85b72b3f1d5c6ba").unwrap();
+    let x_only_pub_key = my_keys.public_key().to_bytes();
 
     // prepare scripts
     let pub_key_hash = blake2b_256(x_only_pub_key);
@@ -82,63 +75,11 @@ fn test_funding_lock() {
         .build();
 
     // sign and add witness
-    let message: [u8; 32] = tx.hash().as_slice().try_into().unwrap();
+    
+    // New text note
+    let event: Event = EventBuilder::text_note("Hello from Nostr SDK", []).to_event(&my_keys).unwrap();
 
-    let mut first_round_1 = {
-        let mut nonce_seed = [0u8; 32];
-        rand::rngs::OsRng.fill_bytes(&mut nonce_seed);
-
-        FirstRound::new(
-            key_agg_ctx.clone(),
-            nonce_seed,
-            0,
-            SecNonceSpices::new()
-                .with_seckey(sec_key_1)
-                .with_message(&message),
-        )
-        .unwrap()
-    };
-
-    let mut first_round_2 = {
-        let mut nonce_seed = [0u8; 32];
-        rand::rngs::OsRng.fill_bytes(&mut nonce_seed);
-
-        FirstRound::new(
-            key_agg_ctx,
-            nonce_seed,
-            1,
-            SecNonceSpices::new()
-                .with_seckey(sec_key_2)
-                .with_message(&message),
-        )
-        .unwrap()
-    };
-
-    first_round_1
-        .receive_nonce(1, first_round_2.our_public_nonce())
-        .unwrap();
-    first_round_2
-        .receive_nonce(0, first_round_1.our_public_nonce())
-        .unwrap();
-
-    let mut second_round_1 = first_round_1.finalize(sec_key_1, message).unwrap();
-    let mut second_round_2 = first_round_2.finalize(sec_key_2, message).unwrap();
-    let signature_1: PartialSignature = second_round_1.our_signature();
-    let signature_2: PartialSignature = second_round_2.our_signature();
-
-    second_round_1.receive_signature(1, signature_2).unwrap();
-    let aggregated_signature_1: CompactSignature = second_round_1.finalize().unwrap();
-    second_round_2.receive_signature(0, signature_1).unwrap();
-    let aggregated_signature_2: CompactSignature = second_round_2.finalize().unwrap();
-
-    assert_eq!(aggregated_signature_1, aggregated_signature_2);
-    println!("signature: {:?}", aggregated_signature_1.to_bytes());
-
-    let witness = [
-        &x_only_pub_key,
-        aggregated_signature_1.to_bytes().as_slice(),
-    ]
-    .concat();
+    let witness = event.as_json().as_bytes().to_vec();
 
     let tx = tx.as_advanced_builder().witness(witness.pack()).build();
 

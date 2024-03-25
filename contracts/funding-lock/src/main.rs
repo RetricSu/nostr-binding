@@ -21,6 +21,9 @@ use ckb_std::{
 };
 use hex::encode;
 
+use nostr::Event;
+use nostr::JsonUtil;
+
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
 #[repr(i8)]
@@ -53,17 +56,24 @@ pub fn program_entry() -> i8 {
 }
 
 fn auth() -> Result<(), Error> {
-    let signature = load_witness(0, Source::GroupInput)?;
-    let message = load_tx_hash()?;
+    let event_bytes = load_witness(0, Source::GroupInput)?;
+    let event = Event::from_json(event_bytes).unwrap();
+    let binding = event.signature(); 
+    let signature = binding.as_ref();
+    let message = event.id.as_bytes();
+    let public_key = event.pubkey.to_bytes();
+    let mut signature_auth = [0u8; 96];
+    signature_auth[..32].copy_from_slice(&public_key);
+    signature_auth[32..].copy_from_slice(&signature.to_vec());
 
     let mut pubkey_hash = [0u8; 20];
     let script = load_script()?;
     let args: Bytes = script.args().unpack();
-    pubkey_hash.copy_from_slice(&args[0..20]);
+    pubkey_hash.copy_from_slice(&args[0..20]); //todo: change to pubkey
 
     // AuthAlgorithmIdSchnorr = 7
     let algorithm_id_str = CString::new(format!("{:02X?}", 7u8)).unwrap();
-    let signature_str = CString::new(format!("{}", encode(signature))).unwrap();
+    let signature_str = CString::new(format!("{}", encode(signature_auth))).unwrap();
     let message_str = CString::new(format!("{}", encode(message))).unwrap();
     let pubkey_hash_str = CString::new(format!("{}", encode(pubkey_hash))).unwrap();
 
