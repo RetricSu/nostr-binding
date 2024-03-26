@@ -7,3 +7,4 @@ edition = "2021"
 ckb-testtool = "0.10.2"
 serde_json = "1.0"
 nostr = "0.29.0"
+hex = { version = "0.4", default-features = false, features = ["alloc"]}

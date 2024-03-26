@@ -20,7 +20,7 @@ use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::Unpack},
     debug,
-    high_level::{self, exec_cell, load_script, load_witness},
+    high_level::{self, exec_cell, load_script, load_witness_args},
 };
 use hex::encode;
 
@@ -29,7 +29,7 @@ use error::Error;
 use nostr::Event;
 use nostr::JsonUtil;
 use type_id::{load_type_id_from_script_args, validate_type_id};
-use util::get_asset_event_cell_outpoint;
+use util::get_asset_event_cell_type_id;
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
@@ -41,7 +41,13 @@ pub fn program_entry() -> i8 {
 }
 
 fn auth() -> Result<(), Error> {
-    let event_bytes = load_witness(0, Source::GroupInput)?;
+    let witness_args = load_witness_args(0, Source::GroupOutput)?;
+    let witness = witness_args
+        .output_type()
+        .to_opt()
+        .ok_or(Error::InvalidTypeIDCellNum)?
+        .raw_data();
+    let event_bytes = witness.to_vec();
     let event = Event::from_json(event_bytes).unwrap();
     let binding = event.signature();
     let signature = binding.as_ref();
@@ -55,8 +61,8 @@ fn auth() -> Result<(), Error> {
     let args = blake2b_256(public_key);
     pubkey_hash.copy_from_slice(&args[0..20]);
 
-    let _ = validate_args(event.id().to_bytes());
-    validate_asset_event(event.clone());
+    validate_script_args(event.id().to_bytes())?;
+    validate_asset_event(event.clone())?;
 
     // AuthAlgorithmIdSchnorr = 7
     let algorithm_id_str = CString::new(format!("{:02X?}", 7u8)).unwrap();
@@ -75,24 +81,22 @@ fn auth() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn validate_asset_event(event: Event) {
-    let cell_outpoint = get_asset_event_cell_outpoint(event);
-    let outpoint = high_level::load_input_out_point(0, Source::GroupInput).unwrap();
-    let tx_hash = outpoint.tx_hash();
-    let index = outpoint.index();
-    debug!(
-        "cell_outpoint: {:?}, tx hash: {:?}, index: {:?}",
-        cell_outpoint, tx_hash, index
-    );
+pub fn validate_asset_event(event: Event) -> Result<(), Error> {
+    let cell_type_id = get_asset_event_cell_type_id(event);
+
+    let type_id = load_type_id_from_script_args(32)?;
+    let script_type_id = encode(type_id.to_vec());
+    assert_eq!(script_type_id, cell_type_id);
+    Ok(())
 }
 
-pub fn validate_args(event_id: [u8; 32]) -> Result<(), Error> {
+pub fn validate_script_args(event_id: [u8; 32]) -> Result<(), Error> {
     let mut script_event_id = [0u8; 32];
     let script = load_script()?;
     let args: Bytes = script.args().unpack();
     script_event_id.copy_from_slice(&args[0..32]);
 
-    if !event_id.eq(&script_event_id) {
+    if !script_event_id.eq(&event_id) {
         return Err(Error::AssetEventIdNotMatch);
     }
 
