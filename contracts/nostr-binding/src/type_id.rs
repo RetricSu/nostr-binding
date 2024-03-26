@@ -8,6 +8,7 @@ use ckb_std::{
     high_level::{load_cell_type_hash, load_input, load_script, load_script_hash},
     syscalls::load_cell,
 };
+use hex::encode;
 
 use super::Error;
 
@@ -52,7 +53,6 @@ pub fn validate_type_id(type_id: [u8; 32]) -> Result<(), Error> {
     if !has_type_id_cell(0, Source::GroupInput) {
         // We are creating a new type ID cell here. Additional checkings are needed to ensure the type ID is legit.
         let index = locate_first_type_id_output_index()?;
-
         // The type ID is calculated as the blake2b (with CKB's personalization) of
         // the first CellInput in current transaction, and the created output cell
         // index(in 64-bit little endian unsigned integer).
@@ -65,7 +65,6 @@ pub fn validate_type_id(type_id: [u8; 32]) -> Result<(), Error> {
         let mut ret = [0; 32];
         blake2b.finalize(&mut ret);
 
-        debug!("type_id: {:?}, ret: {:?}", type_id, ret);
         if ret != type_id {
             debug!("Invalid type ID!");
             return Err(Error::TypeIDNotMatch);
