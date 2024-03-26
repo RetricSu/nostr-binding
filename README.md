@@ -2,7 +2,7 @@
 
 This repository contains the scripts for the CKB Payment Channel Network.
 
-[funding-lock](contracts/funding-lock/README.md)
+[nostr-binding](contracts/nostr-binding/README.md)
 
 [commitment-lock](contracts/commitment-lock/README.md)
 

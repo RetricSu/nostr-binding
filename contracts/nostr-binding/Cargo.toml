@@ -1,11 +1,13 @@
 [package]
-name = "funding-lock"
+name = "nostr-binding"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ckb-hash = {version = "0.114.0", default-features = false, features = ["ckb-contract"] }
 ckb-std = "0.15"
 hex = { version = "0.4", default-features = false, features = ["alloc"]}
+nostr = {version = "0.29.0", default-features = false, features = ["alloc", "nip06"]}
 
 [build-dependencies]
 ckb-gen-types = "0.114.0"
