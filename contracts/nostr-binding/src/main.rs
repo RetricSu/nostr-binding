@@ -19,7 +19,7 @@ use alloc::{ffi::CString, string::ToString};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::Unpack},
-    high_level::{exec_cell, load_script, load_witness_args},
+    high_level::{exec_cell, load_cell_data, load_script, load_witness_args},
 };
 use hex::encode;
 
@@ -29,6 +29,8 @@ use nostr::Event;
 use nostr::JsonUtil;
 use type_id::{load_type_id_from_script_args, validate_type_id};
 use util::get_asset_event_cell_type_id;
+
+use crate::util::get_asset_event_initial_owner;
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
@@ -81,11 +83,17 @@ fn auth() -> Result<(), Error> {
 }
 
 pub fn validate_asset_event(event: Event) -> Result<(), Error> {
-    let cell_type_id = get_asset_event_cell_type_id(event);
-
+    // check if event tag type id is equal to script type id
+    let cell_type_id = get_asset_event_cell_type_id(event.clone());
     let type_id = load_type_id_from_script_args(32)?;
     let script_type_id = encode(type_id);
     assert_eq!(script_type_id, cell_type_id);
+
+    // check if output data is equal to first p tag
+    let owner_pubkey = get_asset_event_initial_owner(event);
+    let pubkey = load_cell_data(0, Source::GroupOutput)?;
+    assert_eq!(owner_pubkey, encode(pubkey));
+
     Ok(())
 }
 
