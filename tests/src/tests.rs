@@ -56,8 +56,8 @@ fn test_funding_lock() {
 
     let type_id = {
         let mut blake2b = Blake2bBuilder::new(32)
-        .personal(b"ckb-default-hash")
-        .build();
+            .personal(b"ckb-default-hash")
+            .build();
         blake2b.update(input.as_slice());
         blake2b.update(&0u64.to_le_bytes());
         let mut ret = [0; 32];

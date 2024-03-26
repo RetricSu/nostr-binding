@@ -11,7 +11,7 @@ pub enum Error {
     Encoding,
     // [Auth]
     // Add customized errors here...
-    AuthError,
+    AuthFail,
     // [type_id]
     // There can only be at most one input and at most one output type ID cell
     InvalidTypeIDCellNum,
