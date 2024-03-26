@@ -8,7 +8,6 @@ use ckb_std::{
     high_level::{load_cell_type_hash, load_input, load_script, load_script_hash},
     syscalls::load_cell,
 };
-use hex::encode;
 
 use super::Error;
 

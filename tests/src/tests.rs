@@ -1,7 +1,7 @@
 use super::*;
 use ckb_testtool::{
     builtin::ALWAYS_SUCCESS,
-    ckb_hash::{new_blake2b, Blake2bBuilder},
+    ckb_hash::Blake2bBuilder,
     ckb_types::{bytes::Bytes, core::TransactionBuilder, packed::*, prelude::*},
     context::Context,
 };
@@ -13,7 +13,7 @@ use hex::encode;
 const MAX_CYCLES: u64 = 10_000_000;
 
 #[test]
-fn test_funding_lock() {
+fn test_mint_token() {
     // deploy contract
     let mut context = Context::default();
     let loader = Loader::default();
@@ -22,7 +22,7 @@ fn test_funding_lock() {
     let nostr_binding_out_point = context.deploy_cell(nostr_binding_bin);
     let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
-    // generate two random secret keys
+    // pass secret key
     let my_keys =
         Keys::parse("a9e5f16529cbe055c1f7b6d928b980a2ee0cc0a1f07a8444b85b72b3f1d5c6ba").unwrap();
 
@@ -56,8 +56,8 @@ fn test_funding_lock() {
 
     let type_id = {
         let mut blake2b = Blake2bBuilder::new(32)
-        .personal(b"ckb-default-hash")
-        .build();
+            .personal(b"ckb-default-hash")
+            .build();
         blake2b.update(input.as_slice());
         blake2b.update(&0u64.to_le_bytes());
         let mut ret = [0; 32];
@@ -67,10 +67,13 @@ fn test_funding_lock() {
     // build nostr asset event
     let event: Event = EventBuilder::text_note(
         "Hello from Nostr SDK",
-        [Tag::Generic(
-            TagKind::from("cell_type_id"),
-            vec![encode(type_id.clone().to_vec())],
-        )],
+        [
+            Tag::Generic(
+                TagKind::from("cell_type_id"),
+                vec![encode(type_id.clone().to_vec())],
+            ),
+            Tag::public_key(my_keys.public_key()),
+        ],
     )
     .to_event(&my_keys)
     .unwrap();
@@ -96,7 +99,12 @@ fn test_funding_lock() {
             .build(),
     ];
 
-    let outputs_data = vec![Bytes::new(); 2];
+    // prepare output cell data
+    let owner_pubkey: Bytes = {
+        let k = my_keys.public_key().to_bytes();
+        Bytes::from(k.to_vec())
+    };
+    let outputs_data = vec![owner_pubkey, Bytes::new()];
 
     // build transaction
     let tx = TransactionBuilder::default()
@@ -126,8 +134,6 @@ fn test_funding_lock() {
         .as_advanced_builder()
         .witness(witness.as_bytes().pack())
         .build();
-
-    // println!("tx: {:?}", tx);
 
     // run
     let cycles = context

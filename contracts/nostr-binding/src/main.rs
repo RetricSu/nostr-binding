@@ -14,13 +14,12 @@ ckb_std::entry!(program_entry);
 #[cfg(not(test))]
 default_alloc!();
 
-use alloc::ffi::CString;
 use alloc::format;
+use alloc::{ffi::CString, string::ToString};
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::Unpack},
-    debug,
-    high_level::{self, exec_cell, load_script, load_witness_args},
+    high_level::{exec_cell, load_cell_data, load_script, load_witness_args},
 };
 use hex::encode;
 
@@ -30,6 +29,8 @@ use nostr::Event;
 use nostr::JsonUtil;
 use type_id::{load_type_id_from_script_args, validate_type_id};
 use util::get_asset_event_cell_type_id;
+
+use crate::util::get_asset_event_initial_owner;
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
@@ -55,7 +56,7 @@ fn auth() -> Result<(), Error> {
     let public_key = event.pubkey.to_bytes();
     let mut signature_auth = [0u8; 96];
     signature_auth[..32].copy_from_slice(&public_key);
-    signature_auth[32..].copy_from_slice(&signature.to_vec());
+    signature_auth[32..].copy_from_slice(signature.as_ref());
 
     let mut pubkey_hash = [0u8; 20];
     let args = blake2b_256(public_key);
@@ -66,9 +67,9 @@ fn auth() -> Result<(), Error> {
 
     // AuthAlgorithmIdSchnorr = 7
     let algorithm_id_str = CString::new(format!("{:02X?}", 7u8)).unwrap();
-    let signature_str = CString::new(format!("{}", encode(signature_auth))).unwrap();
-    let message_str = CString::new(format!("{}", encode(message))).unwrap();
-    let pubkey_hash_str = CString::new(format!("{}", encode(pubkey_hash))).unwrap();
+    let signature_str = CString::new(encode(signature_auth).to_string()).unwrap();
+    let message_str = CString::new(encode(message).to_string()).unwrap();
+    let pubkey_hash_str = CString::new(encode(pubkey_hash).to_string()).unwrap();
 
     let args = [
         algorithm_id_str.as_c_str(),
@@ -77,16 +78,22 @@ fn auth() -> Result<(), Error> {
         pubkey_hash_str.as_c_str(),
     ];
 
-    exec_cell(&AUTH_CODE_HASH, ScriptHashType::Data1, &args).map_err(|_| Error::AuthError)?;
+    exec_cell(&AUTH_CODE_HASH, ScriptHashType::Data1, &args).map_err(|_| Error::AuthFail)?;
     Ok(())
 }
 
 pub fn validate_asset_event(event: Event) -> Result<(), Error> {
-    let cell_type_id = get_asset_event_cell_type_id(event);
-
+    // check if event tag type id is equal to script type id
+    let cell_type_id = get_asset_event_cell_type_id(event.clone());
     let type_id = load_type_id_from_script_args(32)?;
-    let script_type_id = encode(type_id.to_vec());
+    let script_type_id = encode(type_id);
     assert_eq!(script_type_id, cell_type_id);
+
+    // check if output data is equal to first p tag
+    let owner_pubkey = get_asset_event_initial_owner(event);
+    let pubkey = load_cell_data(0, Source::GroupOutput)?;
+    assert_eq!(owner_pubkey, encode(pubkey));
+
     Ok(())
 }
 

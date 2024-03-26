@@ -5,15 +5,15 @@ const CELL_OUTPOINT_TAG_NAME: &str = "cell_outpoint";
 const CELL_TYPE_ID_TAG_NAME: &str = "cell_type_id";
 
 pub fn get_asset_event_cell_outpoint(event: Event) -> String {
-    return get_first_custom_tag_value(event, CELL_OUTPOINT_TAG_NAME.to_string());
+    get_first_custom_tag_value(event, CELL_OUTPOINT_TAG_NAME.to_string())
 }
 
 pub fn get_asset_event_cell_type_id(event: Event) -> String {
-    return get_first_custom_tag_value(event, CELL_TYPE_ID_TAG_NAME.to_string());
+    get_first_custom_tag_value(event, CELL_TYPE_ID_TAG_NAME.to_string())
 }
 
 pub fn get_asset_event_initial_owner(event: Event) -> String {
-    return get_first_tag_value(event, Alphabet::P);
+    get_first_tag_value(event, Alphabet::P)
 }
 
 pub fn get_first_tag_value(event: Event, single_letter: Alphabet) -> String {
