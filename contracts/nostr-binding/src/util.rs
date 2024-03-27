@@ -1,4 +1,5 @@
 use alloc::string::{String, ToString};
+use ckb_std::debug;
 use nostr::{Alphabet, Event, Tag};
 
 use crate::config::{CELL_OUTPOINT_TAG_NAME, CELL_TYPE_ID_TAG_NAME};
@@ -50,5 +51,6 @@ pub fn get_first_custom_tag_value(event: Event, tag_name: String) -> String {
             }
         }
     }
+    debug!("first custom tag not found, {:?}", tag_name);
     panic!("first custom tag not found")
 }
