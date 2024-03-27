@@ -61,9 +61,12 @@ fn auth() -> Result<(), Error> {
     let events_bytes = witness.to_vec();
     let events = decode_events(events_bytes);
 
-    let event = events[0].clone();
+    for event in events.clone() {
+        event.verify_id().unwrap();
+        validate_event_signature(event.clone())?;
+    }
 
-    validate_event_signature(event.clone())?;
+    let event = events[0].clone();
     validate_script_args(event.id().to_bytes())?;
     validate_event(events)?;
 
@@ -176,7 +179,7 @@ pub fn load_event_id_from_script_args() -> Result<[u8; 32], Error> {
 //      total_event_count(1 byte, le) + first_event_length(8 bytes, le) + first_event_content + second_event_length(8 bytes, le)....
 pub fn decode_events(data: Vec<u8>) -> Vec<Event> {
     // Ensure we have at least 1 byte for the total number of events
-    if data.len() < 1 {
+    if data.is_empty() {
         debug!("Not enough data to decode events.");
         panic!("Not enough data to decode events.");
     }
@@ -218,5 +221,5 @@ pub fn decode_events(data: Vec<u8>) -> Vec<Event> {
     // Print or process the decoded events
     debug!("Decoded events: {:?}", events);
 
-    return events;
+    events
 }
