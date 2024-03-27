@@ -61,14 +61,15 @@ fn auth() -> Result<(), Error> {
     let events_bytes = witness.to_vec();
     let events = decode_events(events_bytes);
 
-    for event in events.clone() {
-        event.verify_id().unwrap();
-        validate_event_signature(event.clone())?;
-    }
+    let type_id = load_type_id_from_script_args(32)?;
+    validate_type_id(type_id)?;
 
-    let event = events[0].clone();
-    validate_script_args(event.id().to_bytes())?;
-    validate_event(events)?;
+    validate_event(events.clone())?;
+
+    for event in events {
+        event.verify_id().unwrap();
+        validate_event_signature(event)?;
+    }
 
     Ok(())
 }
@@ -105,11 +106,6 @@ pub fn validate_event_signature(event: Event) -> Result<(), Error> {
 
 pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
     let event = events[0].clone();
-    // check if event tag type id is equal to script type id
-    let cell_type_id = get_asset_event_cell_type_id(event.clone());
-    let type_id = load_type_id_from_script_args(32)?;
-    let script_type_id = encode(type_id);
-    assert_eq!(script_type_id, cell_type_id);
 
     // check if output data is equal to first p tag
     let owner_pubkey = get_asset_event_initial_owner(event.clone());
@@ -128,8 +124,8 @@ pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
         let tx_hash = cell_outpoint_vec[0];
         let index = cell_outpoint_vec[1];
         let outpoint = load_input_out_point(0, Source::GroupInput)?;
-        assert_eq!(encode(outpoint.tx_hash().to_string()), tx_hash);
-        assert_eq!(encode(outpoint.index().to_string()), index);
+        assert_eq!(encode(outpoint.tx_hash().raw_data().to_vec()), tx_hash);
+        assert_eq!(encode(outpoint.index().raw_data().to_vec()), index);
 
         // validate owner
         let owner = load_cell_data(0, Source::GroupInput)?;
@@ -142,6 +138,12 @@ pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
         assert_eq!(event_id, encode(script_event_id));
     } else {
         // mint mode, validate asset event
+        // check if event tag type id is equal to script type id
+        let cell_type_id = get_asset_event_cell_type_id(event.clone());
+        let type_id = load_type_id_from_script_args(32)?;
+        let script_type_id = encode(type_id);
+        assert_eq!(script_type_id, cell_type_id);
+
         assert_eq!(kind, ASSET_MINT_KIND as u32);
 
         assert_eq!(events.len(), 2);
@@ -149,21 +151,15 @@ pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
         let asset_event = events[1].clone();
         assert_eq!(asset_event.pubkey, event.pubkey);
 
-        let asset_event_id = get_first_tag_value(event, nostr::Alphabet::E);
+        let asset_event_id = get_first_tag_value(event.clone(), nostr::Alphabet::E);
         assert_eq!(asset_event_id, encode(asset_event.id.as_bytes()));
+
+        let script_event_id = load_event_id_from_script_args()?;
+        if !script_event_id.eq(event.id.as_bytes()) {
+            return Err(Error::AssetEventIdNotMatch);
+        }
     }
 
-    Ok(())
-}
-
-pub fn validate_script_args(event_id: [u8; 32]) -> Result<(), Error> {
-    let script_event_id = load_event_id_from_script_args()?;
-    if !script_event_id.eq(&event_id) {
-        return Err(Error::AssetEventIdNotMatch);
-    }
-
-    let type_id = load_type_id_from_script_args(32)?;
-    validate_type_id(type_id)?;
     Ok(())
 }
 
@@ -217,9 +213,6 @@ pub fn decode_events(data: Vec<u8>) -> Vec<Event> {
 
         cursor += event_length; // Move the cursor to the next event length
     }
-
-    // Print or process the decoded events
-    debug!("Decoded events: {:?}", events);
 
     events
 }
