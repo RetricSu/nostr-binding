@@ -1,8 +1,7 @@
 use alloc::string::{String, ToString};
 use nostr::{Alphabet, Event, Tag};
 
-const CELL_OUTPOINT_TAG_NAME: &str = "cell_outpoint";
-const CELL_TYPE_ID_TAG_NAME: &str = "cell_type_id";
+use crate::config::{CELL_OUTPOINT_TAG_NAME, CELL_TYPE_ID_TAG_NAME};
 
 pub fn get_asset_event_cell_outpoint(event: Event) -> String {
     get_first_custom_tag_value(event, CELL_OUTPOINT_TAG_NAME.to_string())
