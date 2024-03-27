@@ -10,6 +10,7 @@ mod type_id;
 mod util;
 
 use alloc::vec::Vec;
+use ckb_std::debug;
 #[cfg(not(test))]
 use ckb_std::default_alloc;
 #[cfg(not(test))]
@@ -57,12 +58,14 @@ fn auth() -> Result<(), Error> {
         .to_opt()
         .ok_or(Error::InvalidTypeIDCellNum)?
         .raw_data();
-    let event_bytes = witness.to_vec();
-    let event = Event::from_json(event_bytes).unwrap();
+    let events_bytes = witness.to_vec();
+    let events = decode_events(events_bytes);
+
+    let event = events[0].clone();
 
     validate_event_signature(event.clone())?;
     validate_script_args(event.id().to_bytes())?;
-    validate_asset_event(event.clone())?;
+    validate_event(events)?;
 
     Ok(())
 }
@@ -97,7 +100,8 @@ pub fn validate_event_signature(event: Event) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn validate_asset_event(event: Event) -> Result<(), Error> {
+pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
+    let event = events[0].clone();
     // check if event tag type id is equal to script type id
     let cell_type_id = get_asset_event_cell_type_id(event.clone());
     let type_id = load_type_id_from_script_args(32)?;
@@ -136,7 +140,14 @@ pub fn validate_asset_event(event: Event) -> Result<(), Error> {
     } else {
         // mint mode, validate asset event
         assert_eq!(kind, ASSET_MINT_KIND as u32);
-        // todo: validate asset metadata
+
+        assert_eq!(events.len(), 2);
+
+        let asset_event = events[1].clone();
+        assert_eq!(asset_event.pubkey, event.pubkey);
+
+        let asset_event_id = get_first_tag_value(event, nostr::Alphabet::E);
+        assert_eq!(asset_event_id, encode(asset_event.id.as_bytes()));
     }
 
     Ok(())
@@ -159,4 +170,53 @@ pub fn load_event_id_from_script_args() -> Result<[u8; 32], Error> {
     let args: Bytes = script.args().unpack();
     script_event_id.copy_from_slice(&args[0..32]);
     Ok(script_event_id)
+}
+
+// witness format:
+//      total_event_count(1 byte, le) + first_event_length(8 bytes, le) + first_event_content + second_event_length(8 bytes, le)....
+pub fn decode_events(data: Vec<u8>) -> Vec<Event> {
+    // Ensure we have at least 1 byte for the total number of events
+    if data.len() < 1 {
+        debug!("Not enough data to decode events.");
+        panic!("Not enough data to decode events.");
+    }
+
+    let mut cursor = 1; // Start after the first byte (total number of events)
+    let mut events = Vec::new();
+
+    // Get the total number of events
+    let total_events = data[0] as usize;
+
+    // Iterate over each event
+    for _ in 0..total_events {
+        // Ensure we have enough bytes to read the event length
+        if data.len() < cursor + 8 {
+            debug!("Not enough data to decode event length.");
+            panic!("Not enough data to decode events.");
+        }
+
+        // Get the length of the current event
+        let event_length_bytes: [u8; 8] = data[cursor..cursor + 8].try_into().unwrap();
+        let event_length = u64::from_le_bytes(event_length_bytes) as usize;
+
+        cursor += 8; // Move the cursor to the start of the event data
+
+        // Ensure we have enough bytes to read the event data
+        if data.len() < cursor + event_length {
+            debug!("Not enough data to decode event.");
+            panic!("Not enough data to decode events.");
+        }
+
+        // Extract the event data
+        let event_data = &data[cursor..cursor + event_length].to_vec();
+        let event = Event::from_json(event_data).unwrap();
+        events.push(event);
+
+        cursor += event_length; // Move the cursor to the next event length
+    }
+
+    // Print or process the decoded events
+    debug!("Decoded events: {:?}", events);
+
+    return events;
 }

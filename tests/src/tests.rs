@@ -67,12 +67,34 @@ fn test_mint_token() {
         blake2b.finalize(&mut ret);
         Bytes::from(ret.to_vec())
     };
+    // build nostr asset metadata event
+    let tags = [
+        Tag::Generic(TagKind::from("name"), vec!["example token".to_string()]),
+        Tag::Generic(
+            TagKind::from("symbol"),
+            vec!["example token symbol".to_string()],
+        ),
+        Tag::Generic(
+            TagKind::from("decimals"),
+            vec!["example token decimals".to_string()],
+        ),
+        Tag::Generic(
+            TagKind::from("description"),
+            vec!["example token description".to_string()],
+        ),
+    ];
+    let asset_meta_event: Event = EventBuilder::new(Kind::from(_ASSET_META_KIND as u64), "", tags)
+        .to_event(&my_keys)
+        .unwrap();
+    let meta_event_id = asset_meta_event.id();
+
     // build nostr asset event
     let tags = [
         Tag::Generic(
             TagKind::from("cell_type_id"),
             vec![encode(type_id.clone().to_vec())],
         ),
+        Tag::event(meta_event_id),
         Tag::public_key(my_keys.public_key()),
     ];
     let event: Event = EventBuilder::new(Kind::from(ASSET_MINT_KIND as u64), "", tags)
@@ -122,10 +144,7 @@ fn test_mint_token() {
         buf.resize(65, 0);
         buf.into()
     };
-    let nostr_witness: Bytes = {
-        let buf = event.as_json().as_bytes().to_vec();
-        buf.into()
-    };
+    let nostr_witness: Bytes = build_witness(vec![event.clone(), asset_meta_event.clone()]);
     let witness = witness_builder
         .lock(Some(zero_lock).pack())
         .output_type(Some(nostr_witness).pack())
@@ -267,10 +286,8 @@ fn test_transfer_token() {
         buf.resize(65, 0);
         buf.into()
     };
-    let nostr_witness: Bytes = {
-        let buf = event.as_json().as_bytes().to_vec();
-        buf.into()
-    };
+    let nostr_witness: Bytes = build_witness(vec![event.clone()]);
+
     let witness = witness_builder
         .lock(Some(zero_lock).pack())
         .output_type(Some(nostr_witness).pack())
@@ -286,4 +303,26 @@ fn test_transfer_token() {
         .verify_tx(&tx, MAX_CYCLES)
         .expect("pass verification");
     println!("consume cycles: {}", cycles);
+}
+
+// witness format:
+//      total_event_count(1 byte, le) + first_event_length(8 bytes, le) + first_event_content + second_event_length(8 bytes, le)....
+fn build_witness(events: Vec<Event>) -> Bytes {
+    let total_event_count = (events.len() as u8).to_le_bytes();
+    let nostr_witness: Bytes = {
+        let buf: Vec<u8> = events
+            .iter()
+            .flat_map(|event| {
+                let e = event.as_json().as_bytes().to_vec();
+                let len_bytes = (e.len() as u64).to_le_bytes();
+                let mut len = [0; 8];
+                len.copy_from_slice(&len_bytes[..std::mem::size_of::<u64>()]);
+
+                [len.to_vec(), e].concat()
+            })
+            .collect();
+
+        [total_event_count.to_vec(), buf].concat().into()
+    };
+    nostr_witness
 }
