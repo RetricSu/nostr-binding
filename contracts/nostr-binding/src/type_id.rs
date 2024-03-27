@@ -11,7 +11,7 @@ use ckb_std::{
 
 use super::Error;
 
-fn has_type_id_cell(index: usize, source: Source) -> bool {
+pub fn has_type_id_cell(index: usize, source: Source) -> bool {
     let mut buf = Vec::new();
     match load_cell(&mut buf, 0, index, source) {
         Ok(_) => true,
