@@ -42,6 +42,7 @@ pub fn program_entry() -> i8 {
 }
 
 fn auth() -> Result<(), Error> {
+    // read nostr event from witness
     let witness_args = load_witness_args(0, Source::GroupOutput)?;
     let witness = witness_args
         .output_type()
@@ -50,8 +51,17 @@ fn auth() -> Result<(), Error> {
         .raw_data();
     let event_bytes = witness.to_vec();
     let event = Event::from_json(event_bytes).unwrap();
-    let binding = event.signature();
-    let signature = binding.as_ref();
+
+    validate_event_signature(event.clone())?;
+    validate_script_args(event.id().to_bytes())?;
+    validate_asset_event(event.clone())?;
+
+    Ok(())
+}
+
+pub fn validate_event_signature(event: Event) -> Result<(), Error> {
+    let sig = event.signature();
+    let signature = sig.as_ref();
     let message = event.id.as_bytes();
     let public_key = event.pubkey.to_bytes();
     let mut signature_auth = [0u8; 96];
@@ -61,9 +71,6 @@ fn auth() -> Result<(), Error> {
     let mut pubkey_hash = [0u8; 20];
     let args = blake2b_256(public_key);
     pubkey_hash.copy_from_slice(&args[0..20]);
-
-    validate_script_args(event.id().to_bytes())?;
-    validate_asset_event(event.clone())?;
 
     // AuthAlgorithmIdSchnorr = 7
     let algorithm_id_str = CString::new(format!("{:02X?}", 7u8)).unwrap();
