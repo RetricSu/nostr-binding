@@ -1,3 +1,5 @@
 /build
 /target
 /tests/failed_txs
+node_modules
+.DS_Store
