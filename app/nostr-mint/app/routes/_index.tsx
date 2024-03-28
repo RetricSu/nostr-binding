@@ -1,4 +1,7 @@
 import type { MetaFunction } from "@remix-run/node";
+import { useState } from "react";
+import { ConnectNostr } from "~/conmponents/connect-nostr";
+import { MintButton } from "~/conmponents/mint-button";
 
 export const meta: MetaFunction = () => {
   return [
@@ -8,20 +11,25 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
+  const [result, setResult] = useState<string>();
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
       <h1>Nostr binding</h1>
+      <ConnectNostr />
+
       <ul>
         <li>
-        <button>mint nostr tokens</button>
+          <MintButton setResult={setResult} />
         </li>
         <li>
-          <button>my tokens</button>
+          <button>My tokens</button>
         </li>
         <li>
-          <button>explore</button>
+          <button>Explore</button>
         </li>
       </ul>
+      <hr />
+      <div>{result}</div>
     </div>
   );
 }

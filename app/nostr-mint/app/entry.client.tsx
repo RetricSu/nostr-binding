@@ -5,14 +5,17 @@
  */
 
 import { RemixBrowser } from "@remix-run/react";
+import { loadWasmSync } from "@rust-nostr/nostr-sdk";
 import { startTransition, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 
 startTransition(() => {
+  loadWasmSync();
+
   hydrateRoot(
     document,
     <StrictMode>
-      <RemixBrowser />
+        <RemixBrowser />
     </StrictMode>
   );
 });
