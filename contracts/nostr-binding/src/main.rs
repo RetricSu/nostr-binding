@@ -124,6 +124,7 @@ pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
         let tx_hash = cell_outpoint_vec[0];
         let index = cell_outpoint_vec[1];
         let outpoint = load_input_out_point(0, Source::GroupInput)?;
+        // todo: rm assert_eq throw error code
         assert_eq!(encode(outpoint.tx_hash().raw_data().to_vec()), tx_hash);
         assert_eq!(encode(outpoint.index().raw_data().to_vec()), index);
 

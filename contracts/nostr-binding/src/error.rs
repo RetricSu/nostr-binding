@@ -21,6 +21,7 @@ pub enum Error {
     ArgsLengthNotEnough,
     // [nostr]
     AssetEventIdNotMatch,
+    ConsumeEventCellOutpointNotMatch,
 }
 
 impl From<SysError> for Error {
