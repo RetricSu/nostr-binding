@@ -17,7 +17,8 @@
     "@rust-nostr/nostr-sdk": "^0.12.0",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@ckb-lumos/lumos": "0.21.1"
   },
   "devDependencies": {
     "@remix-run/dev": "^2.8.1",

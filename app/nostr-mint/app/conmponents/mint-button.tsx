@@ -1,7 +1,7 @@
 import { PublicKey } from "@rust-nostr/nostr-sdk";
 import { useContext } from "react";
 import { SingerContext } from "~/context/signer";
-import { MintEvent } from "~/protocol/mint-event";
+import { Mint } from "~/protocol/mint";
 
 export interface MintButtonProp {
   setResult: (res: string) => void;
@@ -17,7 +17,7 @@ export function MintButton({ setResult }: MintButtonProp) {
       "ec5ebc8524007a3d0522091c7a78a3d6ad571a7ddb40c8215f7754d79175b9e1";
     const pubkey = await signer.publicKey();
     const owner = pubkey.toHex();
-    const mintEvent = MintEvent.init(assetEventId, cellTypeId, owner);
+    const mintEvent = Mint.buildEvent(assetEventId, cellTypeId, owner);
     
     const powEvent = mintEvent.toUnsignedPowEvent(PublicKey.fromHex(owner), 10);
     const event = await signer.signEvent(powEvent);
