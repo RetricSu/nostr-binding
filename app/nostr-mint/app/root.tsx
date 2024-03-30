@@ -7,7 +7,10 @@ import {
 } from "@remix-run/react";
 import { NostrSigner } from "@rust-nostr/nostr-sdk";
 import { useState } from "react";
-import { SingerContext } from "./context/signer";
+import { CKBSigner, SingerContext } from "./context/signer";
+import { Buffer } from "buffer";
+
+globalThis.Buffer = Buffer as unknown as BufferConstructor;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,8 +31,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const [signer, setSigner] = useState<NostrSigner | null>(null);
-  const value = { signer, setSigner };
+  const [nostrSigner, setNostrSigner] = useState<NostrSigner | null>(null);
+  const [ckbSigner, setCKBSigner] = useState<CKBSigner | null>(null);
+
+  const value = { nostrSigner, setNostrSigner, ckbSigner, setCKBSigner };
   return (
     <SingerContext.Provider value={value}>
       <Outlet />

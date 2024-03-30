@@ -4,7 +4,7 @@ import { SingerContext } from "~/context/signer";
 
 export function ConnectNostr() {
   const [nostrPubkey, setNostrPubkey] = useState<string>();
-  const { signer, setSigner } = useContext(SingerContext)!;
+  const { nostrSigner: signer, setNostrSigner: setSigner } = useContext(SingerContext)!;
 
   const connect = async () => {
     if (!signer) {

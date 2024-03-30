@@ -1,5 +1,6 @@
 import type { MetaFunction } from "@remix-run/node";
 import { useState } from "react";
+import { ConnectMetamask } from "~/conmponents/connect-metamask";
 import { ConnectNostr } from "~/conmponents/connect-nostr";
 import { MintButton } from "~/conmponents/mint-button";
 
@@ -15,7 +16,7 @@ export default function Index() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
       <h1>Nostr binding</h1>
-      <ConnectNostr />
+      <ConnectNostr /> <ConnectMetamask />
 
       <ul>
         <li>

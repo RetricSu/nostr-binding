@@ -22,6 +22,19 @@ export async function collectCell(ckbAddress: string, neededCapacity: BI) {
   return collected;
 }
 
+export async function capacityOf(address: string): Promise<BI> {
+  const collector = indexer.collector({
+    lock: helpers.parseAddress(address),
+  });
+
+  let balance = BI.from(0);
+  for await (const cell of collector.collect()) {
+    balance = balance.add(cell.cellOutput.capacity);
+  }
+
+  return balance;
+}
+
 export function buildAlwaysSuccessLock(): Script {
   return {
     codeHash: lumosConfig.SCRIPTS["ALWAYS_SUCCESS"]!.CODE_HASH,

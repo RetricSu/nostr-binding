@@ -1,7 +1,11 @@
-import { PublicKey } from "@rust-nostr/nostr-sdk";
+import { bytes } from "@ckb-lumos/codec";
+import { commons, helpers } from "@ckb-lumos/lumos";
+import { blockchain } from "@ckb-lumos/base";
 import { useContext } from "react";
 import { SingerContext } from "~/context/signer";
+import { Asset } from "~/protocol/asset";
 import { Mint } from "~/protocol/mint";
+import { Serializer } from "~/protocol/serialize";
 
 export interface MintButtonProp {
   setResult: (res: string) => void;
@@ -9,22 +13,40 @@ export interface MintButtonProp {
 
 export function MintButton({ setResult }: MintButtonProp) {
   const context = useContext(SingerContext);
-  const signer = context.signer!;
+  const nostrSigner = context.nostrSigner!;
+  const ckbSigner = context.ckbSigner!;
   const mint = async () => {
-    const assetEventId =
-      "1a665f9ef1a0a08dbf0a59270d422a8671fe777dcdb909797e3ee64a765f5e1c";
-    const cellTypeId =
-      "ec5ebc8524007a3d0522091c7a78a3d6ad571a7ddb40c8215f7754d79175b9e1";
-    const pubkey = await signer.publicKey();
-    const owner = pubkey.toHex();
-    const mintEvent = Mint.buildEvent(assetEventId, cellTypeId, owner);
-    
-    const powEvent = mintEvent.toUnsignedPowEvent(PublicKey.fromHex(owner), 10);
-    const event = await signer.signEvent(powEvent);
-    setResult(
-      "Mint Pow Event: /n/n" +
-        JSON.stringify(JSON.parse(event.asJson()), null, 2)
+    const nostrPubkey = await nostrSigner.publicKey();
+    const assetUnsignedEvent = Asset.buildEvent({
+      name: "test-token",
+    }).toUnsignedEvent(nostrPubkey);
+    const assetEvent = await nostrSigner.signEvent(assetUnsignedEvent);
+    const { txSkeleton, mintEvent } = await Mint.build(
+      ckbSigner.ckbAddress,
+      assetEvent
     );
+    const event = await nostrSigner.signEvent(mintEvent);
+
+    let tx = ckbSigner.buildSigningEntries(txSkeleton);
+    const signedMessage = await ckbSigner.signMessage(
+      tx.signingEntries.get(0)!.message
+    );
+    const signedWitness = bytes.hexify(
+      blockchain.WitnessArgs.pack({
+        lock: commons.omnilock.OmnilockWitnessLock.pack({
+          signature: bytes.bytify(signedMessage).buffer,
+        }),
+        outputType: bytes.bytify(Serializer.packEvents([event, assetEvent]))
+          .buffer,
+      })
+    );
+    tx = tx.update("witnesses", (witnesses: Immutable.List<string>) =>
+      witnesses.set(0, signedWitness)
+    );
+
+    const signedTx = helpers.createTransactionFromSkeleton(tx);
+
+    setResult("Mint Pow Event: /n/n" + JSON.stringify(signedTx, null, 2));
   };
 
   return <button onClick={mint}>Mint</button>;

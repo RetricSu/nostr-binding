@@ -9,3 +9,5 @@ export const CKB_RPC_URL = 'http://localhost:8114';
 
 export const rpc = new RPC(CKB_RPC_URL);
 export const indexer = new Indexer(CKB_RPC_URL);
+
+config.initializeConfig(lumosConfig);

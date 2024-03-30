@@ -13,14 +13,17 @@ import {
   HexString,
   Input,
   Script,
+  commons,
   helpers,
   utils,
 } from "@ckb-lumos/lumos";
+
 import { lumosConfig } from "./ckb/ckb";
 import { buildAlwaysSuccessLock, collectCell } from "./ckb/helper";
 
 export class Mint {
   public static kind = 23333;
+  public static mintDifficulty = 10;
 
   static buildEvent(
     assetEventId: string,
@@ -38,10 +41,10 @@ export class Mint {
   }
 
   static buildBindingTypeScript(eventId: HexString, typeId: HexString): Script {
-    const bindingArgs = `${eventId.slice(2)}${typeId.slice(2)}`;
+    const bindingArgs = `0x${eventId}${typeId}`;
     return {
-      codeHash: "", // todo...
-      hashType: "type",
+      codeHash: lumosConfig.SCRIPTS.OMNILOCK!.CODE_HASH, // todo: change to deployed contract...
+      hashType: lumosConfig.SCRIPTS.OMNILOCK!.HASH_TYPE,
       args: bindingArgs,
     };
   }
@@ -74,11 +77,19 @@ export class Mint {
       },
       {
         outPoint: {
-          txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
-          index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
+          txHash: lumosConfig.SCRIPTS.OMNILOCK!.TX_HASH,
+          index: lumosConfig.SCRIPTS.OMNILOCK!.INDEX,
         },
-        depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
-      }
+        depType: lumosConfig.SCRIPTS.OMNILOCK!.DEP_TYPE,
+      },
+      // todo...
+      // {
+      //   outPoint: {
+      //     txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
+      //     index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
+      //   },
+      //   depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
+      // }
     );
     return cellDeps;
   }
@@ -86,27 +97,27 @@ export class Mint {
   static async build(ckbAddress: string, assetEvent: Event) {
     let txSkeleton = helpers.TransactionSkeleton({});
     const inputs = await collectCell(ckbAddress, BI.from(10000));
+
     const input: Input = {
       previousOutput: inputs[0].outPoint!,
       since: "0x0",
     };
-    const typeId = utils.generateTypeIdScript(input, "0x0").args;
+    const typeId = utils.generateTypeIdScript(input, "0x0").args.slice(2);
 
     const owner = assetEvent.author.toHex();
-    const difficulty = 20;
 
     const mintEvent = this.buildEvent(
       assetEvent.id.toHex(),
       typeId,
       owner
-    ).toUnsignedPowEvent(assetEvent.author, difficulty);
+    ).toUnsignedPowEvent(assetEvent.author, this.mintDifficulty);
 
     const bindingCell = this.buildBindingCell(mintEvent.id.toHex(), typeId);
 
     const txCellDeps = this.buildCellDeps();
 
-    txSkeleton = txSkeleton.update("inputs", (inputs) =>
-      inputs.push(...inputs)
+    txSkeleton = txSkeleton.update("inputs", (_inputs) =>
+      _inputs.push(...inputs)
     );
     txSkeleton = txSkeleton.update("outputs", (outputs) =>
       outputs.push(bindingCell)
@@ -114,6 +125,7 @@ export class Mint {
     txSkeleton = txSkeleton.update("cellDeps", (cellDeps) =>
       cellDeps.concat(txCellDeps)
     );
-    return {txSkeleton, mintEvent};
+    console.log("tx skeleton is ready");
+    return { txSkeleton, mintEvent };
   }
 }
