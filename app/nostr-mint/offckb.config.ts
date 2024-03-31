@@ -10,6 +10,7 @@ export interface NetworkConfig {
 export interface OffCKBConfig {
   version: string;
   lumosVersion: string;
+  contractBinFolder: string;
   network: {
     devnet: NetworkConfig;
     testnet: NetworkConfig;
@@ -149,6 +150,7 @@ const lumosConfig: config.Config = {
 const offCKBConfig: OffCKBConfig = {
   version: "0.1.0-rc7",
   lumosVersion: "0.21.0",
+  contractBinFolder: "build/release",
   network: {
     devnet: {
       lumosConfig,
