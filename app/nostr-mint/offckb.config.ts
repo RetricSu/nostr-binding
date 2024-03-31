@@ -122,9 +122,9 @@ const lumosConfig: config.Config = {
       "DEP_TYPE": "code"
     },
     "NOSTR_BINDING": {
-      "CODE_HASH": "0x594bd9fdfd494a4f6c0b619a8ac968d6a1321c45da9c5f5fcc83b40f675b4d74",
+      "CODE_HASH": "0x2ffb46aca34e6f87d3d5a059f8a3c0a829e487ab7fb1b2599098a177b2128e09",
       "HASH_TYPE": "data2",
-      "TX_HASH": "0x70e3c4190c7ce30b6b4a0fb7e7424718eff827fc2bc4ef7e474e85159787c6d7",
+      "TX_HASH": "0xe13170cac066b95724e5713d13e68abc9b5e7f58c2a9f44b0fb75e9bbc17944e",
       "INDEX": "0x0",
       "DEP_TYPE": "code"
     }

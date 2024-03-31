@@ -6,6 +6,7 @@ import { SingerContext } from "~/context/signer";
 import { Asset } from "~/protocol/asset";
 import { Mint } from "~/protocol/mint";
 import { Serializer } from "~/protocol/serialize";
+import offCKB from "offckb.config";
 
 export interface MintButtonProp {
   setResult: (res: string) => void;
@@ -45,8 +46,15 @@ export function MintButton({ setResult }: MintButtonProp) {
     );
 
     const signedTx = helpers.createTransactionFromSkeleton(tx);
+    console.log(signedTx);
+    const txHash = await offCKB.rpc.sendTransaction(signedTx, "passthrough");
 
-    setResult("Mint Pow Event: /n/n" + JSON.stringify(signedTx, null, 2));
+    setResult(
+      "Mint token: /n/n" +
+        "tx hash: " +
+        txHash +
+        JSON.stringify(signedTx, null, 2)
+    );
   };
 
   return <button onClick={mint}>Mint</button>;

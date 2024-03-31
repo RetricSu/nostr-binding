@@ -44,8 +44,8 @@ export class Mint {
   static buildBindingTypeScript(eventId: HexString, typeId: HexString): Script {
     const bindingArgs = `0x${eventId}${typeId}`;
     return {
-      codeHash: lumosConfig.SCRIPTS.OMNILOCK!.CODE_HASH, // todo: change to deployed contract...
-      hashType: lumosConfig.SCRIPTS.OMNILOCK!.HASH_TYPE,
+      codeHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.CODE_HASH,
+      hashType: lumosConfig.SCRIPTS.NOSTR_BINDING!.HASH_TYPE,
       args: bindingArgs,
     };
   }
@@ -96,10 +96,10 @@ export class Mint {
 
   static async build(ckbAddress: string, assetEvent: Event) {
     let txSkeleton = helpers.TransactionSkeleton({});
-    const inputs = await collectCell(ckbAddress, BI.from(10000));
+    const collectedInputs = await collectCell(ckbAddress, BI.from(14000000000));
 
     const input: Input = {
-      previousOutput: inputs[0].outPoint!,
+      previousOutput: collectedInputs[0].outPoint!,
       since: "0x0",
     };
     const typeId = utils.generateTypeIdScript(input, "0x0").args.slice(2);
@@ -116,8 +116,8 @@ export class Mint {
 
     const txCellDeps = this.buildCellDeps();
 
-    txSkeleton = txSkeleton.update("inputs", (_inputs) =>
-      _inputs.push(...inputs)
+    txSkeleton = txSkeleton.update("inputs", (inputs) =>
+      inputs.push(...collectedInputs)
     );
     txSkeleton = txSkeleton.update("outputs", (outputs) =>
       outputs.push(bindingCell)
@@ -125,7 +125,6 @@ export class Mint {
     txSkeleton = txSkeleton.update("cellDeps", (cellDeps) =>
       cellDeps.concat(txCellDeps)
     );
-    console.log("tx skeleton is ready");
     return { txSkeleton, mintEvent };
   }
 }
