@@ -82,15 +82,14 @@ export class Mint {
           index: lumosConfig.SCRIPTS.OMNILOCK!.INDEX,
         },
         depType: lumosConfig.SCRIPTS.OMNILOCK!.DEP_TYPE,
+      },
+      {
+        outPoint: {
+          txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
+          index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
+        },
+        depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
       }
-      // todo...
-      // {
-      //   outPoint: {
-      //     txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
-      //     index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
-      //   },
-      //   depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
-      // }
     );
     return cellDeps;
   }
