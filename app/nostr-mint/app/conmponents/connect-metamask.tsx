@@ -66,7 +66,7 @@ export function ConnectMetamask() {
           return signedMessage;
         };
 
-        const buildWitnessPlaceholder = () => {
+        const buildWitnessPlaceholder = (eventWitness: Uint8Array) => {
           const SECP_SIGNATURE_PLACEHOLDER = bytes.hexify(
             new Uint8Array(
               commons.omnilock.OmnilockWitnessLock.pack({
@@ -76,14 +76,20 @@ export function ConnectMetamask() {
           );
 
           const witness = bytes.hexify(
-            blockchain.WitnessArgs.pack({ lock: SECP_SIGNATURE_PLACEHOLDER })
+            blockchain.WitnessArgs.pack({
+              lock: SECP_SIGNATURE_PLACEHOLDER,
+              outputType: bytes.hexify(eventWitness),
+            })
           );
 
           return witness;
         };
 
-        const buildSigningEntries = (txSkeleton: any) => {
-          const witness = buildWitnessPlaceholder();
+        const buildSigningEntries = (
+          txSkeleton: any,
+          eventWitness: Uint8Array
+        ) => {
+          const witness = buildWitnessPlaceholder(eventWitness);
           // fill txSkeleton's witness with placeholder
           for (let i = 0; i < txSkeleton.inputs.toArray().length; i++) {
             txSkeleton = txSkeleton.update(

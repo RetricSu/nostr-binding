@@ -7,7 +7,7 @@ export interface CKBSigner {
   lockScript: Script;
   originAddress: string; // eth wallet/unisat ... the original address
   signMessage: (message: string) => Promise<string>;
-  buildSigningEntries: (tx: any) => any;
+  buildSigningEntries: (tx: any, eventWitness: Uint8Array) => any;
 }
 
 export interface SingerContextType {

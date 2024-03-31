@@ -50,7 +50,11 @@ export class Mint {
     };
   }
 
-  static buildBindingCell(eventId: HexString, typeId: HexString) {
+  static buildBindingCell(
+    eventId: HexString,
+    typeId: HexString,
+    ownerPubkey: PublicKey
+  ) {
     const lock = buildAlwaysSuccessLock();
     const type = this.buildBindingTypeScript(eventId, typeId);
     const bindingOutput: Cell = {
@@ -59,7 +63,7 @@ export class Mint {
         lock,
         type,
       },
-      data: "0x",
+      data: "0x" + ownerPubkey.toHex(),
     };
     const capacity = helpers.minimalCellCapacity(bindingOutput);
     bindingOutput.cellOutput.capacity = BI.from(capacity).toHexString();
@@ -89,6 +93,13 @@ export class Mint {
           index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
         },
         depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
+      },
+      {
+        outPoint: {
+          txHash: lumosConfig.SCRIPTS.AUTH!.TX_HASH,
+          index: lumosConfig.SCRIPTS.AUTH!.INDEX,
+        },
+        depType: lumosConfig.SCRIPTS.AUTH!.DEP_TYPE,
       }
     );
     return cellDeps;
@@ -96,7 +107,7 @@ export class Mint {
 
   static async build(ckbAddress: string, assetEvent: Event) {
     let txSkeleton = helpers.TransactionSkeleton({});
-    const collectedInputs = await collectCell(ckbAddress, BI.from(14000000000));
+    const collectedInputs = await collectCell(ckbAddress, BI.from(16000000000));
 
     const input: Input = {
       previousOutput: collectedInputs[0].outPoint!,
@@ -112,7 +123,11 @@ export class Mint {
       owner
     ).toUnsignedPowEvent(assetEvent.author, this.mintDifficulty);
 
-    const bindingCell = this.buildBindingCell(mintEvent.id.toHex(), typeId);
+    const bindingCell = this.buildBindingCell(
+      mintEvent.id.toHex(),
+      typeId,
+      mintEvent.pubkey
+    );
 
     const txCellDeps = this.buildCellDeps();
 

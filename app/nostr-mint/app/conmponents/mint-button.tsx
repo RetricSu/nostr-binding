@@ -28,7 +28,8 @@ export function MintButton({ setResult }: MintButtonProp) {
     );
     const event = await nostrSigner.signEvent(mintEvent);
 
-    let tx = ckbSigner.buildSigningEntries(txSkeleton);
+    const eventWitness = Serializer.packEvents([event, assetEvent]);
+    let tx = ckbSigner.buildSigningEntries(txSkeleton, eventWitness);
     const signedMessage = await ckbSigner.signMessage(
       tx.signingEntries.get(0)!.message
     );
@@ -37,8 +38,7 @@ export function MintButton({ setResult }: MintButtonProp) {
         lock: commons.omnilock.OmnilockWitnessLock.pack({
           signature: bytes.bytify(signedMessage).buffer,
         }),
-        outputType: bytes.bytify(Serializer.packEvents([event, assetEvent]))
-          .buffer,
+        outputType: eventWitness,
       })
     );
     tx = tx.update("witnesses", (witnesses: Immutable.List<string>) =>
