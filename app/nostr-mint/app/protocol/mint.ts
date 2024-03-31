@@ -13,13 +13,14 @@ import {
   HexString,
   Input,
   Script,
-  commons,
   helpers,
   utils,
 } from "@ckb-lumos/lumos";
 
-import { lumosConfig } from "./ckb/ckb";
 import { buildAlwaysSuccessLock, collectCell } from "./ckb/helper";
+import offCKBConfig from "offckb.config";
+
+const lumosConfig = offCKBConfig.lumosConfig;
 
 export class Mint {
   public static kind = 23333;
@@ -81,7 +82,7 @@ export class Mint {
           index: lumosConfig.SCRIPTS.OMNILOCK!.INDEX,
         },
         depType: lumosConfig.SCRIPTS.OMNILOCK!.DEP_TYPE,
-      },
+      }
       // todo...
       // {
       //   outPoint: {

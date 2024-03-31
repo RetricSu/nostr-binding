@@ -1,5 +1,10 @@
 import { helpers, BI, Cell, Script, HashType } from "@ckb-lumos/lumos";
-import { lumosConfig, indexer } from "./ckb";
+import offCKB from "offckb.config";
+
+offCKB.initializeLumosConfig();
+
+const lumosConfig = offCKB.lumosConfig;
+const indexer = offCKB.indexer;
 
 export async function collectCell(ckbAddress: string, neededCapacity: BI) {
   const fromScript = helpers.parseAddress(ckbAddress, {
