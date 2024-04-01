@@ -4,6 +4,8 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  json,
+  useLoaderData,
 } from "@remix-run/react";
 import { NostrSigner } from "@rust-nostr/nostr-sdk";
 import { useState } from "react";
@@ -11,6 +13,14 @@ import { CKBSigner, SingerContext } from "./context/signer";
 import { Buffer } from "buffer";
 
 globalThis.Buffer = Buffer as unknown as BufferConstructor;
+
+export async function loader() {
+  return json({
+    ENV: {
+      NETWORK: process.env.NETWORK,
+    },
+  });
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,6 +41,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const data = useLoaderData<typeof loader>();
+
   const [nostrSigner, setNostrSigner] = useState<NostrSigner | null>(null);
   const [ckbSigner, setCKBSigner] = useState<CKBSigner | null>(null);
 
@@ -38,6 +50,13 @@ export default function App() {
   return (
     <SingerContext.Provider value={value}>
       <Outlet />
+      <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(
+              data.ENV
+            )}`,
+          }}
+        />
     </SingerContext.Provider>
   );
 }

@@ -1,7 +1,7 @@
 import { Script, commons, helpers } from "@ckb-lumos/lumos";
 import { useContext, useState } from "react";
 import { CKBSigner, SingerContext } from "~/context/signer";
-import { capacityOf } from "~/protocol/ckb/helper";
+import { capacityOf } from "~/protocol/ckb/helper.client";
 import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
 

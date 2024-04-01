@@ -4,7 +4,7 @@ import { blockchain } from "@ckb-lumos/base";
 import { useContext } from "react";
 import { SingerContext } from "~/context/signer";
 import { Asset } from "~/protocol/asset";
-import { Mint } from "~/protocol/mint";
+import { Mint } from "~/protocol/mint.client";
 import { Serializer } from "~/protocol/serialize";
 import offCKB from "offckb.config";
 

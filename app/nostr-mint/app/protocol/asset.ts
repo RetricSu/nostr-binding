@@ -1,4 +1,4 @@
-import { Tag, EventId, PublicKey, EventBuilder } from "@rust-nostr/nostr-sdk";
+import { Tag, EventBuilder } from "@rust-nostr/nostr-sdk";
 import { TagName } from "./tag";
 
 export interface AssetPayload {

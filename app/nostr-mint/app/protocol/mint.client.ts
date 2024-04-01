@@ -17,7 +17,7 @@ import {
   utils,
 } from "@ckb-lumos/lumos";
 
-import { buildAlwaysSuccessLock, collectCell } from "./ckb/helper";
+import { buildAlwaysSuccessLock, collectCell } from "./ckb/helper.client";
 import offCKBConfig from "offckb.config";
 
 const lumosConfig = offCKBConfig.lumosConfig;

@@ -10,6 +10,12 @@ Run the Vite dev server:
 npm run dev
 ```
 
+### Switch different networks by env.NETWORK
+
+```shellscript
+export NETWORK=devnet # or testnet, mainnet
+```
+
 ## Deployment
 
 First, build your app for production:
