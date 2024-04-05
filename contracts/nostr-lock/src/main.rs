@@ -46,7 +46,7 @@ pub fn program_entry() -> i8 {
 
 fn auth() -> Result<(), Error> {
     // read nostr event from witness
-    let witness_args = load_witness_args(0, Source::GroupOutput)?;
+    let witness_args = load_witness_args(0, Source::GroupInput)?;
     let witness = witness_args
         .lock()
         .to_opt()
@@ -70,14 +70,12 @@ pub fn validate_event(event: Event) -> Result<(), Error> {
         return Err(Error::InvalidUnlockEventKind);
     }
 
-    validate_event_signature(event.clone())?;
-
     // todo: check pow
 
     // check tx hash tag
     let tx_hash = load_tx_hash()?;
     let tx_hash_in_event = get_event_ckb_tx_hash(event.clone());
-    if !hex::encode(tx_hash).eq(&tx_hash_in_event) {
+    if !encode(tx_hash).eq(&tx_hash_in_event) {
         return Err(Error::UnlockEventInvalidTxHashTag);
     }
 
@@ -87,6 +85,8 @@ pub fn validate_event(event: Event) -> Result<(), Error> {
     if !public_key.eq(&pubkey) {
         return Err(Error::PublicKeyNotMatched);
     }
+
+    validate_event_signature(event.clone())?;
 
     Ok(())
 }

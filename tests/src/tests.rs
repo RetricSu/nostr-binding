@@ -13,7 +13,7 @@ use hex::encode;
 const MAX_CYCLES: u64 = 10_000_000;
 const _ASSET_META_KIND: u16 = 23332;
 const ASSET_MINT_KIND: u16 = 23333;
-const ASSET_CONSUME_KIND: u16 = 23334;
+const ASSET_UNLOCK_KIND: u16 = 23334;
 
 #[test]
 fn test_mint_token() {
@@ -95,7 +95,6 @@ fn test_mint_token() {
             vec![encode(type_id.clone().to_vec())],
         ),
         Tag::event(meta_event_id),
-        Tag::public_key(my_keys.public_key()),
     ];
     let event: Event = EventBuilder::new(Kind::from(ASSET_MINT_KIND as u64), "", tags)
         .to_event(&my_keys)
@@ -168,8 +167,10 @@ fn test_transfer_token() {
     let mut context = Context::default();
     let loader = Loader::default();
     let nostr_binding_bin = loader.load_binary("nostr-binding");
+    let nostr_lock_bin = loader.load_binary("nostr-lock");
     let auth_bin = loader.load_binary("../../deps/auth");
     let nostr_binding_out_point = context.deploy_cell(nostr_binding_bin);
+    let nostr_lock_out_point = context.deploy_cell(nostr_lock_bin);
     let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
     // pass secret key
@@ -178,10 +179,10 @@ fn test_transfer_token() {
 
     // prepare scripts
     let always_success_out_point = context.deploy_cell(ALWAYS_SUCCESS.clone());
-    let lock_script = context
+    let always_success_lock_script = context
         .build_script(&always_success_out_point.clone(), Default::default())
         .expect("script");
-    let lock_script_dep = CellDep::new_builder()
+    let always_success_lock_script_dep = CellDep::new_builder()
         .out_point(always_success_out_point)
         .build();
 
@@ -189,14 +190,23 @@ fn test_transfer_token() {
     let nostr_binding_dep = CellDep::new_builder()
         .out_point(nostr_binding_out_point.clone())
         .build();
+    let nostr_lock_dep = CellDep::new_builder()
+        .out_point(nostr_lock_out_point.clone())
+        .build();
     let auth_dep = CellDep::new_builder().out_point(auth_out_point).build();
-    let cell_deps = vec![nostr_binding_dep, auth_dep, lock_script_dep].pack();
+    let cell_deps = vec![
+        nostr_binding_dep,
+        nostr_lock_dep,
+        auth_dep,
+        always_success_lock_script_dep,
+    ]
+    .pack();
 
     // prepare asset binding cell
     let origin_input_out_point = context.create_cell(
         CellOutput::new_builder()
             .capacity(1000u64.pack())
-            .lock(lock_script.clone())
+            .lock(always_success_lock_script.clone())
             .build(),
         Bytes::new(),
     );
@@ -213,20 +223,24 @@ fn test_transfer_token() {
         blake2b.finalize(&mut ret);
         Bytes::from(ret.to_vec())
     };
-    let event_id: [u8; 32] = [2u8; 32]; // makeup a asset event id to be consumed
+    let asset_meta_event_id: [u8; 32] = [2u8; 32]; // makeup a asset event id to be consumed
 
     let mut type_script_args: [u8; 64] = [0u8; 64];
-    type_script_args[..32].copy_from_slice(&event_id);
+    type_script_args[..32].copy_from_slice(&asset_meta_event_id);
     type_script_args[32..].copy_from_slice(&type_id);
 
     let type_script = context
         .build_script(&nostr_binding_out_point, type_script_args.to_vec().into())
-        .expect("script");
+        .expect("type script");
 
     let owner_pubkey: Bytes = {
         let k = my_keys.public_key().to_bytes();
         Bytes::from(k.to_vec())
     };
+
+    let lock_script = context
+        .build_script(&nostr_lock_out_point, owner_pubkey)
+        .expect("lock script");
 
     // prepare input cells
     let input_out_point = context.create_cell(
@@ -235,42 +249,26 @@ fn test_transfer_token() {
             .lock(lock_script.clone())
             .type_(Some(type_script.clone()).pack())
             .build(),
-        owner_pubkey.clone(),
+        Bytes::new(),
     );
     let input = CellInput::new_builder()
         .previous_output(input_out_point.clone())
         .build();
 
-    // build nostr asset event
-
-    let cell_outpoint_tag = {
-        let outpoint_tx_hash_hex = encode(input_out_point.tx_hash().as_bytes().to_vec());
-        let outpoint_index_hex = encode(input_out_point.index().as_bytes().to_vec());
-        outpoint_tx_hash_hex.to_string() + ":" + &outpoint_index_hex
-    };
-    let tags = [
-        Tag::Generic(TagKind::from("cell_outpoint"), vec![cell_outpoint_tag]),
-        Tag::public_key(my_keys.public_key()),
-        Tag::event(EventId::from_slice(&event_id.to_vec()).unwrap()),
-    ];
-    let event: Event = EventBuilder::new(Kind::from(ASSET_CONSUME_KIND as u64), "", tags)
-        .to_event(&my_keys)
-        .unwrap();
-
     let outputs = vec![
         CellOutput::new_builder()
             .capacity(500u64.pack())
-            .lock(lock_script.clone())
+            .lock(always_success_lock_script.clone())
             .type_(Some(type_script.clone()).pack())
             .build(),
         CellOutput::new_builder()
             .capacity(500u64.pack())
-            .lock(lock_script)
+            .lock(always_success_lock_script)
             .build(),
     ];
 
     // prepare output data
-    let outputs_data = vec![owner_pubkey, Bytes::new()];
+    let outputs_data = vec![Bytes::new(), Bytes::new()];
 
     // build transaction
     let tx = TransactionBuilder::default()
@@ -280,19 +278,21 @@ fn test_transfer_token() {
         .outputs_data(outputs_data.pack())
         .build();
 
+    // build nostr unlock event
+    let cell_tx_hash_tag = tx.hash().as_bytes().to_vec();
+    let tags = [
+        Tag::Generic(TagKind::from("ckb_tx_hash"), vec![encode(cell_tx_hash_tag)]),
+        Tag::event(EventId::from_slice(&asset_meta_event_id.to_vec()).unwrap()),
+    ];
+    let event: Event = EventBuilder::new(Kind::from(ASSET_UNLOCK_KIND as u64), "", tags)
+        .to_event(&my_keys)
+        .unwrap();
+
     // sign and add witness
     let witness_builder = WitnessArgs::new_builder();
-    let zero_lock: Bytes = {
-        let mut buf = Vec::new();
-        buf.resize(65, 0);
-        buf.into()
-    };
     let nostr_witness: Bytes = build_witness(vec![event.clone()]);
 
-    let witness = witness_builder
-        .lock(Some(zero_lock).pack())
-        .output_type(Some(nostr_witness).pack())
-        .build();
+    let witness = witness_builder.lock(Some(nostr_witness).pack()).build();
 
     let tx = tx
         .as_advanced_builder()
@@ -386,7 +386,6 @@ fn test_double_mint_fail() {
             vec![encode(type_id.clone().to_vec())],
         ),
         Tag::event(meta_event_id),
-        Tag::public_key(my_keys.public_key()),
     ];
     let event: Event = EventBuilder::new(Kind::from(ASSET_MINT_KIND as u64), "", tags)
         .to_event(&my_keys)
@@ -415,11 +414,7 @@ fn test_double_mint_fail() {
     ];
 
     // prepare output cell data
-    let owner_pubkey: Bytes = {
-        let k = my_keys.public_key().to_bytes();
-        Bytes::from(k.to_vec())
-    };
-    let outputs_data = vec![owner_pubkey.clone(), owner_pubkey];
+    let outputs_data = vec![Bytes::new(), Bytes::new()];
 
     // build transaction
     let tx = TransactionBuilder::default()
@@ -458,8 +453,10 @@ fn test_fail_transfer_token() {
     let mut context = Context::default();
     let loader = Loader::default();
     let nostr_binding_bin = loader.load_binary("nostr-binding");
+    let nostr_lock_bin = loader.load_binary("nostr-lock");
     let auth_bin = loader.load_binary("../../deps/auth");
     let nostr_binding_out_point = context.deploy_cell(nostr_binding_bin);
+    let nostr_lock_out_point = context.deploy_cell(nostr_lock_bin);
     let auth_out_point: OutPoint = context.deploy_cell(auth_bin);
 
     // pass secret key
@@ -468,10 +465,10 @@ fn test_fail_transfer_token() {
 
     // prepare scripts
     let always_success_out_point = context.deploy_cell(ALWAYS_SUCCESS.clone());
-    let lock_script = context
+    let always_success_lock_script = context
         .build_script(&always_success_out_point.clone(), Default::default())
         .expect("script");
-    let lock_script_dep = CellDep::new_builder()
+    let always_success_lock_script_dep = CellDep::new_builder()
         .out_point(always_success_out_point)
         .build();
 
@@ -479,14 +476,23 @@ fn test_fail_transfer_token() {
     let nostr_binding_dep = CellDep::new_builder()
         .out_point(nostr_binding_out_point.clone())
         .build();
+    let nostr_lock_dep = CellDep::new_builder()
+        .out_point(nostr_lock_out_point.clone())
+        .build();
     let auth_dep = CellDep::new_builder().out_point(auth_out_point).build();
-    let cell_deps = vec![nostr_binding_dep, auth_dep, lock_script_dep].pack();
+    let cell_deps = vec![
+        nostr_binding_dep,
+        nostr_lock_dep,
+        auth_dep,
+        always_success_lock_script_dep,
+    ]
+    .pack();
 
     // prepare asset binding cell
     let origin_input_out_point = context.create_cell(
         CellOutput::new_builder()
             .capacity(1000u64.pack())
-            .lock(lock_script.clone())
+            .lock(always_success_lock_script.clone())
             .build(),
         Bytes::new(),
     );
@@ -503,10 +509,10 @@ fn test_fail_transfer_token() {
         blake2b.finalize(&mut ret);
         Bytes::from(ret.to_vec())
     };
-    let event_id: [u8; 32] = [2u8; 32]; // makeup a asset event id to be consumed
+    let asset_meta_event_id: [u8; 32] = [2u8; 32]; // makeup a asset event id to be consumed
 
     let mut type_script_args: [u8; 64] = [0u8; 64];
-    type_script_args[..32].copy_from_slice(&event_id);
+    type_script_args[..32].copy_from_slice(&asset_meta_event_id);
     type_script_args[32..].copy_from_slice(&type_id);
 
     let type_script = context
@@ -518,6 +524,10 @@ fn test_fail_transfer_token() {
         Bytes::from(k.to_vec())
     };
 
+    let lock_script = context
+        .build_script(&nostr_lock_out_point, owner_pubkey)
+        .expect("lock script");
+
     // prepare input cells
     let input_out_point = context.create_cell(
         CellOutput::new_builder()
@@ -525,42 +535,26 @@ fn test_fail_transfer_token() {
             .lock(lock_script.clone())
             .type_(Some(type_script.clone()).pack())
             .build(),
-        owner_pubkey.clone(),
+        Bytes::new(),
     );
     let input = CellInput::new_builder()
         .previous_output(input_out_point.clone())
         .build();
 
-    // build nostr asset event
-    // here we use un-match cell outpoint in the tag
-    let cell_outpoint_tag = {
-        let outpoint_tx_hash_hex = encode(origin_input_out_point.tx_hash().as_bytes().to_vec());
-        let outpoint_index_hex = encode(origin_input_out_point.index().as_bytes().to_vec());
-        outpoint_tx_hash_hex.to_string() + ":" + &outpoint_index_hex
-    };
-    let tags = [
-        Tag::Generic(TagKind::from("cell_outpoint"), vec![cell_outpoint_tag]),
-        Tag::public_key(my_keys.public_key()),
-        Tag::event(EventId::from_slice(&event_id.to_vec()).unwrap()),
-    ];
-    let event: Event = EventBuilder::new(Kind::from(ASSET_CONSUME_KIND as u64), "", tags)
-        .to_event(&my_keys)
-        .unwrap();
-
     let outputs = vec![
         CellOutput::new_builder()
             .capacity(500u64.pack())
-            .lock(lock_script.clone())
+            .lock(always_success_lock_script.clone())
             .type_(Some(type_script.clone()).pack())
             .build(),
         CellOutput::new_builder()
             .capacity(500u64.pack())
-            .lock(lock_script)
+            .lock(always_success_lock_script)
             .build(),
     ];
 
     // prepare output data
-    let outputs_data = vec![owner_pubkey, Bytes::new()];
+    let outputs_data = vec![Bytes::new(), Bytes::new()];
 
     // build transaction
     let tx = TransactionBuilder::default()
@@ -570,19 +564,22 @@ fn test_fail_transfer_token() {
         .outputs_data(outputs_data.pack())
         .build();
 
+    // build nostr asset event
+    // here we use un-match cell outpoint in the tag
+    let ckb_tx_hash_tag = "invalid tx hash".to_string();
+    let tags = [
+        Tag::Generic(TagKind::from("ckb_tx_hash"), vec![ckb_tx_hash_tag]),
+        Tag::event(EventId::from_slice(&asset_meta_event_id.to_vec()).unwrap()),
+    ];
+    let event: Event = EventBuilder::new(Kind::from(ASSET_UNLOCK_KIND as u64), "", tags)
+        .to_event(&my_keys)
+        .unwrap();
+
     // sign and add witness
     let witness_builder = WitnessArgs::new_builder();
-    let zero_lock: Bytes = {
-        let mut buf = Vec::new();
-        buf.resize(65, 0);
-        buf.into()
-    };
     let nostr_witness: Bytes = build_witness(vec![event.clone()]);
 
-    let witness = witness_builder
-        .lock(Some(zero_lock).pack())
-        .output_type(Some(nostr_witness).pack())
-        .build();
+    let witness = witness_builder.lock(Some(nostr_witness).pack()).build();
 
     let tx = tx
         .as_advanced_builder()
@@ -591,7 +588,7 @@ fn test_fail_transfer_token() {
 
     // run
     let err = context.verify_tx(&tx, MAX_CYCLES).unwrap_err();
-    assert_script_error(err, -1);
+    assert_script_error(err, 7);
 }
 
 // witness format:
