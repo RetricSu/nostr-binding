@@ -17,7 +17,7 @@ import {
   utils,
 } from "@ckb-lumos/lumos";
 
-import { buildAlwaysSuccessLock, collectCell } from "./ckb/helper.client";
+import { collectCell } from "./ckb/helper.client";
 import offCKBConfig from "offckb.config";
 
 const lumosConfig = offCKBConfig.lumosConfig;
@@ -26,15 +26,9 @@ export class Mint {
   public static kind = 23333;
   public static mintDifficulty = 10;
 
-  static buildEvent(
-    assetEventId: string,
-    cellTypeId: string,
-    firstOwnerPubkey: string,
-    content = ""
-  ) {
+  static buildEvent(assetEventId: string, cellTypeId: string, content = "") {
     const tags = [
       Tag.event(EventId.fromHex(assetEventId)),
-      Tag.public_key(PublicKey.fromHex(firstOwnerPubkey)),
       Tag.parse([TagName.cellTypeId, cellTypeId]),
     ];
     const builder = new EventBuilder(this.kind, content, tags);
@@ -50,12 +44,21 @@ export class Mint {
     };
   }
 
+  static buildNostrLockScript(publicKey: PublicKey): Script {
+    const lockArgs = "0x" + publicKey.toHex();
+    return {
+      codeHash: lumosConfig.SCRIPTS.NOSTR_LOCK!.CODE_HASH,
+      hashType: lumosConfig.SCRIPTS.NOSTR_LOCK!.HASH_TYPE,
+      args: lockArgs,
+    };
+  }
+
   static buildBindingCell(
     eventId: HexString,
     typeId: HexString,
     ownerPubkey: PublicKey
   ) {
-    const lock = buildAlwaysSuccessLock();
+    const lock = this.buildNostrLockScript(ownerPubkey);
     const type = this.buildBindingTypeScript(eventId, typeId);
     const bindingOutput: Cell = {
       cellOutput: {
@@ -63,7 +66,7 @@ export class Mint {
         lock,
         type,
       },
-      data: "0x" + ownerPubkey.toHex(),
+      data: "0x00",
     };
     const capacity = helpers.minimalCellCapacity(bindingOutput);
     bindingOutput.cellOutput.capacity = BI.from(capacity).toHexString();
@@ -93,6 +96,13 @@ export class Mint {
           index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
         },
         depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
+      },
+      {
+        outPoint: {
+          txHash: lumosConfig.SCRIPTS.NOSTR_LOCK!.TX_HASH,
+          index: lumosConfig.SCRIPTS.NOSTR_LOCK!.INDEX,
+        },
+        depType: lumosConfig.SCRIPTS.NOSTR_LOCK!.DEP_TYPE,
       },
       {
         outPoint: {
