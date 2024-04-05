@@ -2,13 +2,13 @@ use alloc::string::{String, ToString};
 use ckb_std::debug;
 use nostr::{Alphabet, Event, Tag};
 
-use crate::config::CELL_TYPE_ID_TAG_NAME;
+use crate::config::CKB_TX_HASH_TAG_NAME;
 
-pub fn get_asset_event_cell_type_id(event: Event) -> String {
-    get_first_custom_tag_value(event, CELL_TYPE_ID_TAG_NAME.to_string())
+pub fn get_event_ckb_tx_hash(event: Event) -> String {
+    get_first_custom_tag_value(event, CKB_TX_HASH_TAG_NAME.to_string())
 }
 
-pub fn get_first_tag_value(event: Event, single_letter: Alphabet) -> String {
+pub fn _get_first_tag_value(event: Event, single_letter: Alphabet) -> String {
     let tags = event.tags();
     for tag in tags.iter() {
         let res = Tag::parse(tag.as_vec());

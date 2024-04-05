@@ -12,19 +12,11 @@ pub enum Error {
     // [Auth]
     // Add customized errors here...
     AuthFail,
-    // [type_id]
-    // There can only be at most one input and at most one output type ID cell
-    InvalidTypeIDCellNum,
-    // Type id does not match args
-    TypeIDNotMatch,
-    // Length of type id is incorrect
-    ArgsLengthNotEnough,
+    WitnessReadFail,
     // [nostr]
-    InvalidEventLength,
-    NotAssetOwnerToMint,
-    AssetEventIdNotMatch,
-    InvalidAssetEventKind,
-    InvalidAssetMetaEventKind,
+    UnlockEventInvalidTxHashTag,
+    InvalidUnlockEventKind,
+    PublicKeyNotMatched,
 }
 
 impl From<SysError> for Error {
