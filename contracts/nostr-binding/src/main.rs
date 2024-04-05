@@ -103,8 +103,6 @@ pub fn validate_mint_event(event: Event) -> Result<(), Error> {
         return Err(Error::InvalidAssetEventKind);
     }
 
-    validate_event_signature(event.clone())?;
-
     // todo: check pow
 
     // check if event tag type id is equal to script type id
@@ -120,6 +118,8 @@ pub fn validate_mint_event(event: Event) -> Result<(), Error> {
     if !script_event_id.eq(event.id.as_bytes()) {
         return Err(Error::AssetEventIdNotMatch);
     }
+
+    validate_event_signature(event.clone())?;
 
     Ok(())
 }
