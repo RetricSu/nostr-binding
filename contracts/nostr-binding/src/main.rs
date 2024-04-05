@@ -20,12 +20,12 @@ default_alloc!();
 
 use alloc::format;
 use alloc::{ffi::CString, string::ToString};
-use ckb_std::high_level::load_input_out_point;
 use ckb_std::{
     ckb_constants::Source,
     ckb_types::{bytes::Bytes, core::ScriptHashType, prelude::Unpack},
-    high_level::{exec_cell, load_cell_data, load_script, load_witness_args},
+    high_level::{exec_cell, load_script, load_witness_args},
 };
+use config::ASSET_META_KIND;
 use hex::encode;
 
 use ckb_hash::blake2b_256;
@@ -35,11 +35,9 @@ use nostr::JsonUtil;
 use type_id::{load_type_id_from_script_args, validate_type_id};
 use util::get_asset_event_cell_type_id;
 
-use crate::config::{ASSET_CONSUME_KIND, ASSET_MINT_KIND};
+use crate::config::ASSET_MINT_KIND;
 use crate::type_id::has_type_id_cell;
-use crate::util::{
-    get_asset_event_cell_outpoint, get_asset_event_initial_owner, get_first_tag_value,
-};
+use crate::util::get_first_tag_value;
 
 include!(concat!(env!("OUT_DIR"), "/auth_code_hash.rs"));
 
@@ -51,25 +49,90 @@ pub fn program_entry() -> i8 {
 }
 
 fn auth() -> Result<(), Error> {
-    // read nostr event from witness
-    let witness_args = load_witness_args(0, Source::GroupOutput)?;
-    let witness = witness_args
-        .output_type()
-        .to_opt()
-        .ok_or(Error::InvalidTypeIDCellNum)?
-        .raw_data();
-    let events_bytes = witness.to_vec();
-    let events = decode_events(events_bytes);
-
     let type_id = load_type_id_from_script_args(32)?;
     validate_type_id(type_id)?;
 
-    validate_event(events.clone())?;
+    if !has_type_id_cell(0, Source::GroupInput) {
+        // build a new binding cell
+        // need to verify nostr asset Event
 
-    for event in events {
-        event.verify_id().unwrap();
-        validate_event_signature(event)?;
+        // read nostr event from witness
+        let witness_args = load_witness_args(0, Source::GroupOutput)?;
+        let witness = witness_args
+            .output_type()
+            .to_opt()
+            .ok_or(Error::InvalidTypeIDCellNum)?
+            .raw_data();
+        let events_bytes = witness.to_vec();
+        let events = decode_events(events_bytes);
+
+        if !events.len().eq(&2) {
+            return Err(Error::InvalidEventLength);
+        }
+
+        let mint_event = events[0].clone();
+        let asset_meta_event = events[1].clone();
+
+        let mint_pubkey = mint_event.pubkey.to_bytes();
+        let asset_meta_pubkey = asset_meta_event.pubkey.to_bytes();
+        let asset_meta_event_id = asset_meta_event.id.to_bytes();
+
+        validate_mint_event(mint_event.clone())?;
+        validate_asset_metadata_event(asset_meta_event)?;
+
+        // check if mint_event public key is same with asset meta event
+        if !mint_pubkey.eq(&asset_meta_pubkey) {
+            return Err(Error::NotAssetOwnerToMint);
+        }
+
+        // check if mint_event e tag is same with event_id from asset_meta_event
+        let asset_event_id = get_first_tag_value(mint_event, nostr::Alphabet::E);
+        if !encode(asset_meta_event_id).eq(&asset_event_id) {
+            return Err(Error::AssetEventIdNotMatch);
+        }
     }
+
+    Ok(())
+}
+
+pub fn validate_mint_event(event: Event) -> Result<(), Error> {
+    event.verify_id().unwrap();
+
+    let kind = event.clone().kind.as_u32();
+    if !kind.eq(&(ASSET_MINT_KIND as u32)) {
+        return Err(Error::InvalidAssetEventKind);
+    }
+
+    validate_event_signature(event.clone())?;
+
+    // todo: check pow
+
+    // check if event tag type id is equal to script type id
+    let cell_type_id = get_asset_event_cell_type_id(event.clone());
+    let type_id = load_type_id_from_script_args(32)?;
+    let script_type_id = encode(type_id);
+    if !script_type_id.eq(&cell_type_id) {
+        return Err(Error::TypeIDNotMatch);
+    }
+
+    // check if event id is equal to script event id
+    let script_event_id = load_event_id_from_script_args()?;
+    if !script_event_id.eq(event.id.as_bytes()) {
+        return Err(Error::AssetEventIdNotMatch);
+    }
+
+    Ok(())
+}
+
+pub fn validate_asset_metadata_event(event: Event) -> Result<(), Error> {
+    event.verify_id().unwrap();
+
+    let kind = event.clone().kind.as_u32();
+    if !kind.eq(&(ASSET_META_KIND as u32)) {
+        return Err(Error::InvalidAssetMetaEventKind);
+    }
+
+    validate_event_signature(event.clone())?;
 
     Ok(())
 }
@@ -101,66 +164,6 @@ pub fn validate_event_signature(event: Event) -> Result<(), Error> {
     ];
 
     exec_cell(&AUTH_CODE_HASH, ScriptHashType::Data1, &args).map_err(|_| Error::AuthFail)?;
-    Ok(())
-}
-
-pub fn validate_event(events: Vec<Event>) -> Result<(), Error> {
-    let event = events[0].clone();
-
-    // check if output data is equal to first p tag
-    let owner_pubkey = get_asset_event_initial_owner(event.clone());
-    let pubkey = load_cell_data(0, Source::GroupOutput)?;
-    assert_eq!(owner_pubkey, encode(pubkey));
-
-    // check mode requirement
-    let kind = event.clone().kind.as_u32();
-    if has_type_id_cell(0, Source::GroupInput) {
-        // transfer mode, validate consume event
-        assert_eq!(kind, ASSET_CONSUME_KIND as u32);
-
-        // validate cell_outpoint tag
-        let tag = get_asset_event_cell_outpoint(event.clone());
-        let cell_outpoint_vec: Vec<&str> = tag.split(':').collect();
-        let tx_hash = cell_outpoint_vec[0];
-        let index = cell_outpoint_vec[1];
-        let outpoint = load_input_out_point(0, Source::GroupInput)?;
-        // todo: rm assert_eq throw error code
-        assert_eq!(encode(outpoint.tx_hash().raw_data().to_vec()), tx_hash);
-        assert_eq!(encode(outpoint.index().raw_data().to_vec()), index);
-
-        // validate owner
-        let owner = load_cell_data(0, Source::GroupInput)?;
-        let pubkey = event.clone().pubkey.to_hex();
-        assert_eq!(encode(owner), pubkey);
-
-        // validate e tag
-        let event_id = get_first_tag_value(event.clone(), nostr::Alphabet::E);
-        let script_event_id = load_event_id_from_script_args()?;
-        assert_eq!(event_id, encode(script_event_id));
-    } else {
-        // mint mode, validate asset event
-        // check if event tag type id is equal to script type id
-        let cell_type_id = get_asset_event_cell_type_id(event.clone());
-        let type_id = load_type_id_from_script_args(32)?;
-        let script_type_id = encode(type_id);
-        assert_eq!(script_type_id, cell_type_id);
-
-        assert_eq!(kind, ASSET_MINT_KIND as u32);
-
-        assert_eq!(events.len(), 2);
-
-        let asset_event = events[1].clone();
-        assert_eq!(asset_event.pubkey, event.pubkey);
-
-        let asset_event_id = get_first_tag_value(event.clone(), nostr::Alphabet::E);
-        assert_eq!(asset_event_id, encode(asset_event.id.as_bytes()));
-
-        let script_event_id = load_event_id_from_script_args()?;
-        if !script_event_id.eq(event.id.as_bytes()) {
-            return Err(Error::AssetEventIdNotMatch);
-        }
-    }
-
     Ok(())
 }
 

@@ -2,18 +2,10 @@ use alloc::string::{String, ToString};
 use ckb_std::debug;
 use nostr::{Alphabet, Event, Tag};
 
-use crate::config::{CELL_OUTPOINT_TAG_NAME, CELL_TYPE_ID_TAG_NAME};
-
-pub fn get_asset_event_cell_outpoint(event: Event) -> String {
-    get_first_custom_tag_value(event, CELL_OUTPOINT_TAG_NAME.to_string())
-}
+use crate::config::CELL_TYPE_ID_TAG_NAME;
 
 pub fn get_asset_event_cell_type_id(event: Event) -> String {
     get_first_custom_tag_value(event, CELL_TYPE_ID_TAG_NAME.to_string())
-}
-
-pub fn get_asset_event_initial_owner(event: Event) -> String {
-    get_first_tag_value(event, Alphabet::P)
 }
 
 pub fn get_first_tag_value(event: Event, single_letter: Alphabet) -> String {

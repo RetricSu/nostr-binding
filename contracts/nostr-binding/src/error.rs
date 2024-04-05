@@ -20,8 +20,11 @@ pub enum Error {
     // Length of type id is incorrect
     ArgsLengthNotEnough,
     // [nostr]
+    InvalidEventLength,
+    NotAssetOwnerToMint,
     AssetEventIdNotMatch,
-    ConsumeEventCellOutpointNotMatch,
+    InvalidAssetEventKind,
+    InvalidAssetMetaEventKind,
 }
 
 impl From<SysError> for Error {
