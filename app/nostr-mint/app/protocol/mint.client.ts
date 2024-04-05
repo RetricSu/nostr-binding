@@ -19,6 +19,7 @@ import {
 
 import { collectCell } from "./ckb/helper.client";
 import offCKBConfig from "offckb.config";
+import { NostrLock } from "./nostr-lock.client";
 
 const lumosConfig = offCKBConfig.lumosConfig;
 
@@ -44,21 +45,12 @@ export class Mint {
     };
   }
 
-  static buildNostrLockScript(publicKey: PublicKey): Script {
-    const lockArgs = "0x" + publicKey.toHex();
-    return {
-      codeHash: lumosConfig.SCRIPTS.NOSTR_LOCK!.CODE_HASH,
-      hashType: lumosConfig.SCRIPTS.NOSTR_LOCK!.HASH_TYPE,
-      args: lockArgs,
-    };
-  }
-
   static buildBindingCell(
     eventId: HexString,
     typeId: HexString,
     ownerPubkey: PublicKey
   ) {
-    const lock = this.buildNostrLockScript(ownerPubkey);
+    const lock = NostrLock.buildScript(ownerPubkey);
     const type = this.buildBindingTypeScript(eventId, typeId);
     const bindingOutput: Cell = {
       cellOutput: {
@@ -125,12 +117,9 @@ export class Mint {
     };
     const typeId = utils.generateTypeIdScript(input, "0x0").args.slice(2);
 
-    const owner = assetEvent.author.toHex();
-
     const mintEvent = this.buildEvent(
       assetEvent.id.toHex(),
-      typeId,
-      owner
+      typeId
     ).toUnsignedPowEvent(assetEvent.author, this.mintDifficulty);
 
     const bindingCell = this.buildBindingCell(

@@ -1,5 +1,16 @@
-import { helpers, BI, Cell, Script, HashType } from "@ckb-lumos/lumos";
+import {
+  helpers,
+  BI,
+  Cell,
+  Script,
+  HashType,
+  utils,
+  RawTransaction,
+  Transaction,
+} from "@ckb-lumos/lumos";
 import offCKB from "offckb.config";
+import { blockchain } from "@ckb-lumos/base";
+import { bytes } from "@ckb-lumos/codec";
 
 offCKB.initializeLumosConfig();
 
@@ -27,6 +38,29 @@ export async function collectCell(ckbAddress: string, neededCapacity: BI) {
   return collected;
 }
 
+export async function collectTypeCell(
+  ckbAddress: string,
+  type: Script,
+  total: number
+) {
+  const fromScript = helpers.parseAddress(ckbAddress, {
+    config: lumosConfig,
+  });
+
+  const collected: Cell[] = [];
+  const collector = indexer.collector({ lock: fromScript, type });
+  for await (const cell of collector.collect()) {
+    collected.push(cell);
+    if (collected.length >= total) break;
+  }
+
+  if (collected.length < total) {
+    throw new Error(`Not enough type cells, ${collected.length} < ${total}`);
+  }
+
+  return collected;
+}
+
 export async function capacityOf(address: string): Promise<BI> {
   const collector = indexer.collector({
     lock: helpers.parseAddress(address),
@@ -46,4 +80,12 @@ export function buildAlwaysSuccessLock(): Script {
     hashType: lumosConfig.SCRIPTS["ALWAYS_SUCCESS"]!.HASH_TYPE as HashType,
     args: "0x",
   };
+}
+
+export function computeTransactionHash(rawTransaction: Transaction) {
+  const transactionSerialized = bytes.hexify(
+    blockchain.RawTransaction.pack(rawTransaction)
+  );
+  const rawTXHash = utils.ckbHash(transactionSerialized);
+  return rawTXHash;
 }

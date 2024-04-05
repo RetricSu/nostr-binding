@@ -7,15 +7,17 @@ import { Asset } from "~/protocol/asset";
 import { Mint } from "~/protocol/mint.client";
 import { Serializer } from "~/protocol/serialize";
 import offCKB from "offckb.config";
-
+import { Event } from "@rust-nostr/nostr-sdk";
 export interface MintButtonProp {
   setResult: (res: string) => void;
+  setAssetEvent: (event: Event) => void;
 }
 
-export function MintButton({ setResult }: MintButtonProp) {
+export function MintButton({ setResult, setAssetEvent }: MintButtonProp) {
   const context = useContext(SingerContext);
   const nostrSigner = context.nostrSigner!;
   const ckbSigner = context.ckbSigner!;
+
   const mint = async () => {
     const nostrPubkey = await nostrSigner.publicKey();
     const assetUnsignedEvent = Asset.buildEvent({
@@ -27,6 +29,7 @@ export function MintButton({ setResult }: MintButtonProp) {
       assetEvent
     );
     const event = await nostrSigner.signEvent(mintEvent);
+    setAssetEvent(event);
 
     const eventWitness = Serializer.packEvents([event, assetEvent]);
     let tx = ckbSigner.buildSigningEntries(txSkeleton, eventWitness);
@@ -46,7 +49,6 @@ export function MintButton({ setResult }: MintButtonProp) {
     );
 
     const signedTx = helpers.createTransactionFromSkeleton(tx);
-    console.log(signedTx);
     const txHash = await offCKB.rpc.sendTransaction(signedTx, "passthrough");
 
     setResult(
@@ -57,5 +59,9 @@ export function MintButton({ setResult }: MintButtonProp) {
     );
   };
 
-  return <button onClick={mint}>Mint</button>;
+  return (
+    <div>
+      <button onClick={mint}>Mint</button>;
+    </div>
+  );
 }
