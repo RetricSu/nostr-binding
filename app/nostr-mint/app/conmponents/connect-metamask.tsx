@@ -6,8 +6,6 @@ import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
 import offCKBConfig from "offckb.config";
 
-const lumosConfig = offCKBConfig.lumosConfig;
-
 interface EthereumRpc {
   (payload: {
     method: "personal_sign";
@@ -105,6 +103,8 @@ export function ConnectMetamask() {
           return txSkeleton;
         };
 
+        const lumosConfig = offCKBConfig.lumosConfig;
+
         const ckbSigner: CKBSigner = {
           buildSigningEntries,
           ckbAddress: omniAddr,
@@ -140,7 +140,7 @@ export function ConnectMetamask() {
       <button onClick={connect}>
         {ethAddr
           ? `eth: ${ethAddr.slice(0, 4)}..${ethAddr.slice(-4)}`
-          : "connect eth account"}
+          : "Metamask"}
       </button>
       {omniAddr && omniAddr}
       {balance && +balance > 0 && <p>balance: {balance}</p>}

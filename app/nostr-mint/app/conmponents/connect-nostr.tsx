@@ -21,7 +21,7 @@ export function ConnectNostr() {
     <button onClick={connect}>
       {nostrPubkey
         ? `user: ${nostrPubkey.slice(0, 4)}..${nostrPubkey.slice(-4)}`
-        : "connect nostr account"}
+        : "Nostr"}
     </button>
   );
 }
