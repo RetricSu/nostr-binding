@@ -1,5 +1,6 @@
 import { Tag, EventBuilder } from "@rust-nostr/nostr-sdk";
-import { TagName } from "./tag";
+import { TagName } from "../tag";
+import { ProtocolKind } from "../kind";
 
 export interface AssetPayload {
   name?: string;
@@ -9,7 +10,7 @@ export interface AssetPayload {
 }
 
 export class Asset {
-  public static kind = 23332;
+  public static kind = ProtocolKind.assetMeta;
   static buildEvent(payload: AssetPayload, content: string = "") {
     const tags = [];
     if (payload.name) {

@@ -11,8 +11,14 @@ import { NostrSigner } from "@rust-nostr/nostr-sdk";
 import { useState } from "react";
 import { CKBSigner, SingerContext } from "./context/signer";
 import { Buffer } from "buffer";
+import type { LinksFunction } from "@remix-run/node";
+import stylesheet from "~/tailwind.css?url";
 
 globalThis.Buffer = Buffer as unknown as BufferConstructor;
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: stylesheet },
+];
 
 export async function loader() {
   return json({
@@ -32,7 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <div className="max-w-[700px] mx-auto">{children}</div>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -51,12 +57,10 @@ export default function App() {
     <SingerContext.Provider value={value}>
       <Outlet />
       <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(
-              data.ENV
-            )}`,
-          }}
-        />
+        dangerouslySetInnerHTML={{
+          __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+        }}
+      />
     </SingerContext.Provider>
   );
 }

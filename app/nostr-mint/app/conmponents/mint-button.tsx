@@ -3,8 +3,8 @@ import { commons, helpers } from "@ckb-lumos/lumos";
 import { blockchain } from "@ckb-lumos/base";
 import { useContext } from "react";
 import { SingerContext } from "~/context/signer";
-import { Asset } from "~/protocol/asset";
-import { Mint } from "~/protocol/mint.client";
+import { Asset } from "~/protocol/event/asset";
+import { Mint } from "~/protocol/event/mint.client";
 import { Serializer } from "~/protocol/serialize";
 import offCKB from "offckb.config";
 import { Event } from "@rust-nostr/nostr-sdk";
@@ -24,7 +24,7 @@ export function MintButton({ setResult, setAssetEvent }: MintButtonProp) {
       name: "test-token",
     }).toUnsignedEvent(nostrPubkey);
     const assetEvent = await nostrSigner.signEvent(assetUnsignedEvent);
-    const { txSkeleton, mintEvent } = await Mint.build(
+    const { txSkeleton, mintEvent } = await Mint.buildTransaction(
       ckbSigner.ckbAddress,
       assetEvent
     );

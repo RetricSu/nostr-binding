@@ -20,8 +20,18 @@ export default function Index() {
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Nostr binding</h1>
-      <ConnectNostr /> <ConnectMetamask />
+      <div className="flex justify-between py-2">
+        <div>
+          about{" "}
+          <a href="/about" target="_blank" rel="noopener noreferrer">
+            Nostr binding
+          </a>
+        </div>
+        <div className="flex gap-4">
+        <ConnectNostr /> <ConnectMetamask />
+        </div>
+      </div>
+
       <ul>
         <li>
           <MintButton setAssetEvent={setAssetEvent} setResult={setResult} />
@@ -30,7 +40,7 @@ export default function Index() {
           )}
         </li>
         <li>
-          <AssetButton assetEvent={assetEvent} setResult={setResult}/>
+          <AssetButton assetEvent={assetEvent} setResult={setResult} />
         </li>
         <li>
           <button>Explore</button>

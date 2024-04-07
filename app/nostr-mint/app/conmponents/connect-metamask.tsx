@@ -1,9 +1,10 @@
 import { Script, commons, helpers } from "@ckb-lumos/lumos";
 import { useContext, useState } from "react";
 import { CKBSigner, SingerContext } from "~/context/signer";
-import { capacityOf } from "~/protocol/ckb/helper.client";
+import { capacityOf } from "~/protocol/ckb-helper.client";
 import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
+import offCKBConfig from "offckb.config";
 
 interface EthereumRpc {
   (payload: {
@@ -102,12 +103,30 @@ export function ConnectMetamask() {
           return txSkeleton;
         };
 
+        const lumosConfig = offCKBConfig.lumosConfig;
+
         const ckbSigner: CKBSigner = {
           buildSigningEntries,
           ckbAddress: omniAddr,
           originAddress: ethAddr,
           lockScript: omniLockScript,
           signMessage,
+          cellDeps: [
+            {
+              outPoint: {
+                txHash: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.TX_HASH,
+                index: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.INDEX,
+              },
+              depType: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.DEP_TYPE,
+            },
+            {
+              outPoint: {
+                txHash: lumosConfig.SCRIPTS.OMNILOCK!.TX_HASH,
+                index: lumosConfig.SCRIPTS.OMNILOCK!.INDEX,
+              },
+              depType: lumosConfig.SCRIPTS.OMNILOCK!.DEP_TYPE,
+            },
+          ]
         };
         setSigner(ckbSigner);
 
@@ -121,7 +140,7 @@ export function ConnectMetamask() {
       <button onClick={connect}>
         {ethAddr
           ? `eth: ${ethAddr.slice(0, 4)}..${ethAddr.slice(-4)}`
-          : "connect eth account"}
+          : "Metamask"}
       </button>
       {omniAddr && omniAddr}
       {balance && +balance > 0 && <p>balance: {balance}</p>}

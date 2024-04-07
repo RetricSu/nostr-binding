@@ -5,13 +5,14 @@ import { useContext } from "react";
 import { SingerContext } from "~/context/signer";
 import { Serializer } from "~/protocol/serialize";
 import offCKB from "offckb.config";
-import { Unlock } from "~/protocol/unlock.client";
+import { Unlock } from "~/protocol/event/unlock.client";
 import {
   buildAlwaysSuccessLock,
   computeTransactionHash,
-} from "~/protocol/ckb/helper.client";
+} from "~/protocol/ckb-helper.client";
 import { Event } from "@rust-nostr/nostr-sdk";
-import { Mint } from "~/protocol/mint.client";
+import { Mint } from "~/protocol/event/mint.client";
+import { NostrBinding } from "~/protocol/script/nostr-binding.client";
 
 export interface UnlockButtonProp {
   assetEvent: Event;
@@ -31,7 +32,7 @@ export function UnlockButton({ setResult, assetEvent }: UnlockButtonProp) {
       return alert("invalid asset event!");
     }
     const typeId = typeIdTag.asVec()[1];
-    const type = Mint.buildBindingTypeScript(eventId, typeId);
+    const type = NostrBinding.buildScript(eventId, typeId);
     return await unlock(type);
   };
 
