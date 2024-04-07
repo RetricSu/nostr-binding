@@ -5,7 +5,6 @@ import {
   Script,
   HashType,
   utils,
-  RawTransaction,
   Transaction,
 } from "@ckb-lumos/lumos";
 import offCKB from "offckb.config";

@@ -20,6 +20,15 @@ export class NostrLock {
     return address;
   }
 
+  public static parseCBKAddressToNostrPubkey(ckbAddress: string){
+    const script = helpers.parseAddress(ckbAddress);
+    if(script.codeHash !== lumosConfig.SCRIPTS.NOSTR_BINDING!.CODE_HASH || script.hashType !== lumosConfig.SCRIPTS.NOSTR_BINDING!.HASH_TYPE){
+      throw new Error("nostr-lock contract script info not match!");
+    }
+
+    return script.args;
+  }
+
   public static buildCellDeps() {
     const cellDeps: CellDep[] = [
       {
@@ -28,13 +37,6 @@ export class NostrLock {
           index: lumosConfig.SCRIPTS.NOSTR_LOCK!.INDEX,
         },
         depType: lumosConfig.SCRIPTS.NOSTR_LOCK!.DEP_TYPE,
-      },
-      {
-        outPoint: {
-          txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
-          index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
-        },
-        depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
       },
       {
         outPoint: {

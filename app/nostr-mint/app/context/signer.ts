@@ -1,4 +1,4 @@
-import { Script } from "@ckb-lumos/lumos";
+import { CellDep, Script } from "@ckb-lumos/lumos";
 import { NostrSigner } from "@rust-nostr/nostr-sdk";
 import { createContext } from "react";
 
@@ -8,6 +8,7 @@ export interface CKBSigner {
   originAddress: string; // eth wallet/unisat ... the original address
   signMessage: (message: string) => Promise<string>;
   buildSigningEntries: (tx: any, eventWitness: Uint8Array) => any;
+  cellDeps: CellDep[];
 }
 
 export interface SingerContextType {

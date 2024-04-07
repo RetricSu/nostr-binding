@@ -2,23 +2,20 @@ import {
   BI,
   Cell,
   HexString,
-  Input,
-  Output,
   Script,
   helpers,
-  utils,
 } from "@ckb-lumos/lumos";
 import { Tag, EventBuilder, PublicKey } from "@rust-nostr/nostr-sdk";
-import { TagName } from "./tag";
-import { collectTypeCell } from "./ckb/helper.client";
-import { NostrLock } from "./nostr-lock.client";
+import { TagName } from "../tag";
+import { collectTypeCell } from "../ckb-helper.client";
+import { NostrLock } from "../script/nostr-lock.client";
+import { ProtocolKind } from "../kind";
 
 export class Unlock {
-  public static kind = 23334;
+  public static kind = ProtocolKind.unlock;
   public static unlockDifficulty = 10;
 
   static buildEvent(txHash: HexString) {
-    console.log("[TagName.ckbTxHash, txHash]: ", [TagName.ckbTxHash, txHash]);
     const tags = [Tag.parse([TagName.ckbTxHash, txHash])];
     const builder = new EventBuilder(this.kind, "", tags);
     return builder;

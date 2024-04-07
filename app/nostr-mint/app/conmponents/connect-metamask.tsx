@@ -1,9 +1,12 @@
 import { Script, commons, helpers } from "@ckb-lumos/lumos";
 import { useContext, useState } from "react";
 import { CKBSigner, SingerContext } from "~/context/signer";
-import { capacityOf } from "~/protocol/ckb/helper.client";
+import { capacityOf } from "~/protocol/ckb-helper.client";
 import { blockchain } from "@ckb-lumos/base";
 import { bytes } from "@ckb-lumos/codec";
+import offCKBConfig from "offckb.config";
+
+const lumosConfig = offCKBConfig.lumosConfig;
 
 interface EthereumRpc {
   (payload: {
@@ -108,6 +111,22 @@ export function ConnectMetamask() {
           originAddress: ethAddr,
           lockScript: omniLockScript,
           signMessage,
+          cellDeps: [
+            {
+              outPoint: {
+                txHash: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.TX_HASH,
+                index: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.INDEX,
+              },
+              depType: lumosConfig.SCRIPTS.SECP256K1_BLAKE160!.DEP_TYPE,
+            },
+            {
+              outPoint: {
+                txHash: lumosConfig.SCRIPTS.OMNILOCK!.TX_HASH,
+                index: lumosConfig.SCRIPTS.OMNILOCK!.INDEX,
+              },
+              depType: lumosConfig.SCRIPTS.OMNILOCK!.DEP_TYPE,
+            },
+          ]
         };
         setSigner(ckbSigner);
 
