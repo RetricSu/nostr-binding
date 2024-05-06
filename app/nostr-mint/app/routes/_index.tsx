@@ -1,8 +1,7 @@
 import type { MetaFunction } from "@remix-run/node";
 import { Event } from "@rust-nostr/nostr-sdk";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { AssetButton } from "~/conmponents/asset-button";
-import { ConnectMetamask } from "~/conmponents/connect-metamask";
 import { ConnectNostr } from "~/conmponents/connect-nostr";
 import { MintButton } from "~/conmponents/mint-button";
 import { UnlockButton } from "~/conmponents/unlock-button";
@@ -15,20 +14,19 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-  const [result, setResult] = useState<string>();
+  const [result, setResult] = useState<ReactNode | string>();
   const [assetEvent, setAssetEvent] = useState<Event>();
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
       <div className="flex justify-between py-2">
         <div>
-          about{" "}
           <a href="/about" target="_blank" rel="noopener noreferrer">
-            Nostr binding
+            About
           </a>
         </div>
         <div className="flex gap-4">
-        <ConnectNostr /> <ConnectMetamask />
+          <ConnectNostr />
         </div>
       </div>
 
@@ -42,12 +40,9 @@ export default function Index() {
         <li>
           <AssetButton assetEvent={assetEvent} setResult={setResult} />
         </li>
-        <li>
-          <button>Explore</button>
-        </li>
       </ul>
       <hr />
-      <div>{result}</div>
+      <div className="mt-10 overflow-x-scroll">{result}</div>
     </div>
   );
 }

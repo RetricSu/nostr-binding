@@ -12,6 +12,7 @@ import { collectCell } from "../ckb-helper.client";
 import { NostrLock } from "../script/nostr-lock.client";
 import { NostrBinding } from "../script/nostr-binding.client";
 import { ProtocolKind } from "../kind";
+import { mergeArraysAndRemoveDuplicates } from "../util";
 
 export class Mint {
   public static kind = ProtocolKind.mint;
@@ -34,11 +35,12 @@ export class Mint {
 
     const mintEvent = this.buildEvent(
       assetEvent.id.toHex(),
-      typeId
+      typeId,
+      "This is the content of the Test-NFT Item"
     ).toUnsignedPowEvent(assetEvent.author, this.mintDifficulty);
 
     const ownerPubkeyStr = NostrLock.parseCBKAddressToNostrPubkey(ckbAddress);
-    const ownerPubkey = PublicKey.fromHex(ownerPubkeyStr);
+    const ownerPubkey = PublicKey.fromHex(ownerPubkeyStr.slice(2));
     const lock = NostrLock.buildScript(ownerPubkey);
     const bindingCell = NostrBinding.buildBindingCell(
       mintEvent.id.toHex(),
@@ -46,11 +48,11 @@ export class Mint {
       lock
     );
     // todo: add changeCell and fee rate
- 
-    const txCellDeps = [
-      ...NostrBinding.buildCellDeps(),
-      ...NostrLock.buildCellDeps()
-    ];
+
+    const txCellDeps = mergeArraysAndRemoveDuplicates(
+      NostrBinding.buildCellDeps(),
+      NostrLock.buildCellDeps()
+    );
 
     txSkeleton = txSkeleton.update("inputs", (inputs) =>
       inputs.push(...collectedInputs)

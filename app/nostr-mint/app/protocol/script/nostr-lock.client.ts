@@ -22,7 +22,7 @@ export class NostrLock {
 
   public static parseCBKAddressToNostrPubkey(ckbAddress: string){
     const script = helpers.parseAddress(ckbAddress);
-    if(script.codeHash !== lumosConfig.SCRIPTS.NOSTR_BINDING!.CODE_HASH || script.hashType !== lumosConfig.SCRIPTS.NOSTR_BINDING!.HASH_TYPE){
+    if(script.codeHash !== lumosConfig.SCRIPTS.NOSTR_LOCK!.CODE_HASH || script.hashType !== lumosConfig.SCRIPTS.NOSTR_LOCK!.HASH_TYPE){
       throw new Error("nostr-lock contract script info not match!");
     }
 

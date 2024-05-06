@@ -11,8 +11,8 @@ import {
   computeTransactionHash,
 } from "~/protocol/ckb-helper.client";
 import { Event } from "@rust-nostr/nostr-sdk";
-import { Mint } from "~/protocol/event/mint.client";
 import { NostrBinding } from "~/protocol/script/nostr-binding.client";
+import offCKBConfig from "offckb.config";
 
 export interface UnlockButtonProp {
   assetEvent: Event;
@@ -45,6 +45,17 @@ export function UnlockButton({ setResult, assetEvent }: UnlockButtonProp) {
       type
     );
 
+    const lumosConfig = offCKBConfig.lumosConfig;
+    txSkeleton = txSkeleton.update("cellDeps", (cellDeps) =>
+      cellDeps.push({
+        outPoint: {
+          txHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.TX_HASH,
+          index: lumosConfig.SCRIPTS.NOSTR_BINDING!.INDEX,
+        },
+        depType: lumosConfig.SCRIPTS.NOSTR_BINDING!.DEP_TYPE,
+      }) 
+    );
+
     const tx = helpers.createTransactionFromSkeleton(txSkeleton);
     const txHash = computeTransactionHash(tx).slice(2);
 
@@ -55,7 +66,7 @@ export function UnlockButton({ setResult, assetEvent }: UnlockButtonProp) {
     const event = await nostrSigner.signEvent(unlockEvent);
 
     const eventWitness = Serializer.packEvents([event]);
-    let witness = bytes.hexify(
+    const witness = bytes.hexify(
       blockchain.WitnessArgs.pack({ lock: eventWitness })
     );
     txSkeleton = txSkeleton.update(
@@ -67,12 +78,12 @@ export function UnlockButton({ setResult, assetEvent }: UnlockButtonProp) {
       signedTx,
       "passthrough"
     );
-    setResult("unlock tx: " + realTxHash);
+    setResult("transfer tx: " + realTxHash);
   };
 
   return (
     <div>
-      <button onClick={onUnlock}>Unlock</button>;
+      <button onClick={onUnlock}>Transfer</button>
     </div>
   );
 }
