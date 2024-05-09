@@ -17,25 +17,43 @@ Draft paper to describe the Nostr binding protocol
 
 - [docs/whitepaper.md](/docs/whitepaper.md)
 
-## Develop
+## Run Demo
 
-### How to build and test scripts
+### 1. Start Devnet
 
+```sh
+offckb node
 ```
+
+*Required [offckb](https://github.com/RetricSu/offckb) version >= 0.2.2*
+
+### 2. Prepare Scripts
+
+```sh
 make build
-make test
+cp deps/auth build/release/auth
 ```
 
-### How to deploy scripts on CKB local blockchain for testing
+### 3. Deploy Scripts
 
-use [offckb](https://github.com/RetricSu/offckb) to make this easier:
-
-```bash
+```sh
 cd app/nostr-mint
 offckb deploy --network devnet
 ```
-
 The deployed script info is auto-updated in the `offckb.config.ts` file in the app so you can use it directly.
+
+### 4. Start the DApp
+
+```sh
+cd app/nostr-mint
+npm i && npm run dev 
+```
+
+### 5. Deposit CKB to Nostr Account
+
+```sh
+offckb deposit --network devnet <Your-nostr-account-corresponding-address> <AmountInShannon>
+```
 
 *This workspace was bootstrapped with [ckb-script-templates].*
 
