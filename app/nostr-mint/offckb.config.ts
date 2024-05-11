@@ -25,7 +25,7 @@ export interface OffCKBConfig {
 function readEnvNetwork(): "devnet" | "testnet" | "mainnet" {
   // you may need to update the env method
   // according to your frontend framework
-  const defaultNetwork = "testnet";
+  const defaultNetwork = "devnet";
   let network = defaultNetwork;
   if (typeof window != null) {
     //@ts-ignore

@@ -14,7 +14,15 @@ import offckb from "offckb.config";
 const lumosConfig = offckb.lumosConfig;
 
 export class NostrBinding {
+  public static isScriptExist() {
+    return lumosConfig.SCRIPTS.NOSTR_BINDING != null;
+  }
+
   static buildScript(eventId: HexString, typeId: HexString): Script {
+    if (!this.isScriptExist()) {
+      throw new Error("nostr binding script not found. have you deploy it?");
+    }
+
     const bindingArgs = `0x${eventId}${typeId}`;
     return {
       codeHash: lumosConfig.SCRIPTS.NOSTR_BINDING!.CODE_HASH,
@@ -50,6 +58,10 @@ export class NostrBinding {
   }
 
   static buildCellDeps() {
+    if (!this.isScriptExist()) {
+      throw new Error("nostr binding script not found. have you deploy it?");
+    }
+
     const cellDeps: CellDep[] = [];
     cellDeps.push(
       {
