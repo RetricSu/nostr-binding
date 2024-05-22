@@ -9,13 +9,13 @@ We also build a very simple POC demo of the Nostr binding protocol in the `/app`
 
 ## Docs
 
-Short PDF to explain the purpose of the Nostr binding protocol
+A short presentation for the Bitcoin hackathon to explain the idea of the Nostr binding protocol
 
-- [Nostr Binding Protocol.pdf](/assets/Nostr%20Binding%20Protocol%20full.pdf)
+- [Nostr Binding Protocol.pdf](/assets/nostr-binding-presentation.pdf)
 
-Draft paper to describe the Nostr binding protocol
+Light paper to describe the Nostr binding protocol
 
-- [docs/whitepaper.md](/docs/whitepaper.md)
+- [docs/lightpaper.md](/docs/lightpaper.md)
 
 ## Run Demo
 
@@ -46,7 +46,7 @@ The deployed script info is auto-updated in the `offckb.config.ts` file in the a
 
 ```sh
 cd app/nostr-mint
-npm i && npm run dev 
+npm i && NETWORK=devnet npm run dev 
 ```
 
 ### 5. Deposit CKB to Nostr Account
