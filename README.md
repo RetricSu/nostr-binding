@@ -16,6 +16,7 @@ A short presentation for the Bitcoin hackathon to explain the idea of the Nostr 
 Light paper to describe the Nostr binding protocol
 
 - [docs/lightpaper.md](/docs/lightpaper.md)
+- [docs/lightpaper-zh.md](/docs/lightpaper-zh.md)(中文版)
 
 ## Run Demo
 

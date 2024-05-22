@@ -281,3 +281,9 @@ Also, Event-based assets work seamlessly with the Nostr protocol which brings ne
 **Why CKB?**
 
 It is much easier to implement the binding protocol with CKB due to its programmability. Bitcoin is harder. Furthermore, given that CKB has a unique way of binding with BTC, it will be easier to bind with BTC through the binding with CKB first.
+
+## Conclusion
+
+Overall, Nostr, as a simple and practical information distribution protocol, is well-suited for mass adoption of consumer-level applications. CKB's programmability and its binding relationship with Bitcoin make it an ideal choice for implementing the Nostr binding protocol.
+
+At the same time, issuing native assets based on Nostr Events allows for the design of new product mechanisms from the application's perspective, enabling Nostr to compete with other traditional internet applications and find its unique product-market fit.
