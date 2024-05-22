@@ -68,7 +68,7 @@ You can learn more about CKB from [docs.nervos.org](https://docs.nervos.org/).
 
 ## The Binding
 
-The idea of binding is to create a 1-vs-1 mapping between a Nostr Event and a CKB Cell. The Event is used to define the details of your assets while the mapping Event is used to provide guard of the ownership and other blockchain-specific abilities.
+The idea of binding is to create a 1-vs-1 mapping between a Nostr Event and a CKB Cell. The Event is used to define the details of your assets while the mapping Cell is used to provide guard of the ownership and other blockchain-specific abilities.
 
 To create such a 1-vs-1 mapping, you need to make one Nostr Event point to one CKB Cell, and vice versa. Thanks to the simplicity of both Nostr and CKB protocol, it is very easy to create such bindings.
 
