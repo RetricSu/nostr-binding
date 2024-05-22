@@ -256,8 +256,34 @@ The spillman channel is a unidirectional payment channel with a much simpler imp
 
 Instead of creating 1-vs-1 binding, we can create N-vs-1 binding between Nostr Events and CKB Cells. In other words, we bundle multiple events into one single cell to allow scalability. This will make the on-chain mapping storage cost much smaller than the off-chain Nostr Events. 
 
-However, the problem with N-vs-1 binding is that it requires the design of a new pattern to control and split the bundle Events's ownership.
+However, the problem with N-vs-1 binding is that it requires the design of a new pattern to control and split the bundle Events's ownership. It will be more complicated and require extra work for the design and implementation.
 
 4. RGB style solution
 
-Another way to achieve scalability is to create an RGB-style solution that uses CKB Cells as a single-use seal and making the Nostr protocol the implementation layer of the RGB protocol. This will be more complex, but we only need to implement the tokens standard. The general smart contract in the RGB protocol can be removed in such a case.
+Another way to achieve ultimately scalability is to create an RGB-style solution that uses CKB Cells as a single-use seal and makes the Nostr protocol the implementation layer of the RGB-like protocol. Such a solution can choose to implement only the tokens standard and exclude the general smart contract idea in the original RGB protocol to simplify the workflow.
+
+## FAQ
+
+**Why Nostr?**
+
+Nostr is the ideal layer for crypto-based mass adoption applications. It is a super-simple, straightforward, practical, unbiased, easy-to-integrated information distribution protocol.
+
+Many web3 projects would use something like [Arweave](https://www.arweave.org/) and [IPFS](https://ipfs.tech/), which hold a totally different value and philosophies. You can think of Nostr as a super-loose protocol without the obsession with fully peer-to-peer networks and the over-promising of the token economy and incentive mechanism that long-exits in the web3 world, which makes Nostr more practical and unbiased.
+
+**Why not just use blockchain assets?**
+
+The idea to enable users to issue their native assets in the Nostr network based on Events instead of using the existing tokens from blockchains is that tokens are nothing without value created.
+
+For consumer-level applications, most blockchain assets only create friction in the product workflow without increasing values for the product. Instead of forcing a token mechanism into the product, a better approach will be starting from the user's side and seeing what they need and what blockchain could help. We think the native assets based on Events fit such an approach. Application developers and users can see what they can do with assets from their point of view instead of taking assets and rules from existing blockchains. 
+
+Also, Event-based assets work seamlessly with the Nostr protocol which brings new ways to play with the existing products and tools in the Nostr ecosystem.
+
+**Why CKB?**
+
+It is much easier to implement the binding protocol with CKB due to its programmability. Bitcoin is harder. Furthermore, given that CKB has a unique way of binding with BTC, it will be easier to bind with BTC through the binding with CKB first.
+
+## Conclusion
+
+Overall, Nostr, as a simple and practical information distribution protocol, is well-suited for mass adoption of consumer-level applications. CKB's programmability and its binding relationship with Bitcoin make it an ideal choice for implementing the Nostr binding protocol.
+
+At the same time, issuing native assets based on Nostr Events allows for the design of new product mechanisms from the application's perspective, enabling Nostr to compete with other traditional internet applications and find its unique product-market fit.
