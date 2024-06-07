@@ -30,6 +30,19 @@ offckb node
 
 ### 2. Prepare Scripts
 
+The following dependencies are required for building the Scripts:
+
+* `git`, `make`, `sed`, `bash`, `sha256sum` and others Unix utilities. Refer to the documentation for your operating systems for how to install them. Chances are your system might already have them.
+* `Rust`: latest stable Rust installed via [rustup](https://rustup.rs/) should work. Make sure you have `riscv64` target installed via: `rustup target add riscv64imac-unknown-none-elf`
+* `Clang`: make sure you have clang 16+ installed, sample installtion steps for selected platforms are:
+    + Debian / Ubuntu: `wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && rm llvm.sh`
+    + Fedora 39+: `sudo dnf -y install clang`
+    + Archlinux: `sudo pacman --noconfirm -Syu clang`
+    + macOS: `brew install llvm@16`
+    + Windows(with [Scoop](scoop install llvm yasm)): `scoop install llvm yasm`
+
+Run the following commands to build the Scripts:
+
 ```sh
 make build
 cp deps/auth build/release/auth
