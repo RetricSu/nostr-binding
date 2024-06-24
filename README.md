@@ -1,5 +1,7 @@
 # Nostr binding on CKB
 
+> Move to [https://github.com/cryptape/nostr-binding](https://github.com/cryptape/nostr-binding)
+
 > [!WARNING]
 > This repository is still in the proof-of-concept stage.
 
